@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface FormData {
   name: string;
@@ -51,14 +52,53 @@ const ProjectForm = () => {
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    console.log('Form Data:', data);
-    toast.success('Project idea submitted successfully! You\'ll receive a confirmation email shortly.');
-    reset();
-    setShowOtherResources(false);
-    setIsSubmitting(false);
+    try {
+      // Prepare project data for Supabase
+      const projectData = {
+        student_name: data.name,
+        student_email: data.email,
+        roll_number: data.rollNumber,
+        branch: data.branch,
+        year: data.year,
+        contact_number: data.contactNumber || null,
+        is_team_project: data.isTeamProject || false,
+        team_size: data.teamSize || null,
+        team_members: data.teamMembers || null,
+        category: data.category,
+        project_title: data.projectTitle,
+        description: data.description,
+        expected_outcomes: data.expectedOutcomes || null,
+        duration: data.duration,
+        required_resources: data.resources || [],
+        other_resources: data.otherResources || null,
+        status: 'pending' as const,
+      };
+
+      // Insert project into Supabase
+      const { data: project, error } = await supabase
+        .from('projects')
+        .insert([projectData])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error submitting project:', error);
+        toast.error(`Failed to submit project: ${error.message}`);
+        return;
+      }
+
+      console.log('Project submitted successfully:', project);
+      toast.success('Project idea submitted successfully! You\'ll receive a confirmation email shortly.');
+      
+      // Reset form
+      reset();
+      setShowOtherResources(false);
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast.error('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
