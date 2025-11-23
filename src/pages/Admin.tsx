@@ -4,25 +4,56 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { FaUser, FaLock } from 'react-icons/fa';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
+import { useEffect } from 'react';
 
 const Admin = () => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { signIn, user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // If already logged in, redirect to dashboard
+    if (!loading && user) {
+      navigate('/admin/dashboard');
+    }
+  }, [user, loading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate login
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // In production, this would verify against backend
-    console.log('Login attempt:', { username, password });
-    
-    setIsLoading(false);
+    try {
+      const { error } = await signIn(email, password);
+      
+      if (error) {
+        toast.error(error.message || 'Invalid credentials');
+      } else {
+        toast.success('Logged in successfully!');
+        navigate('/admin/dashboard');
+      }
+    } catch (error) {
+      toast.error('An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-juit-blue via-juit-blue to-juit-light-blue flex items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          className="w-16 h-16 border-4 border-accent border-t-transparent rounded-full"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-juit-blue via-juit-blue to-juit-light-blue flex items-center justify-center p-4">
@@ -42,15 +73,15 @@ const Admin = () => {
           {/* Login Form */}
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="email">Email</Label>
               <div className="relative">
                 <FaUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Enter username"
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="admin@juit.ac.in"
                   className="pl-10 border-input focus:border-accent focus:ring-accent"
                   required
                 />
@@ -94,6 +125,13 @@ const Admin = () => {
             <p className="text-xs text-muted-foreground text-center">
               This is the admin panel for faculty to review and approve student project submissions.
               Please use your faculty credentials to log in.
+            </p>
+          </div>
+
+          {/* Development Note */}
+          <div className="mt-4 p-3 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg border border-yellow-300 dark:border-yellow-800">
+            <p className="text-xs text-yellow-800 dark:text-yellow-200 text-center">
+              <strong>For Development:</strong> Create an admin user in Supabase Auth first, then login here.
             </p>
           </div>
         </div>
