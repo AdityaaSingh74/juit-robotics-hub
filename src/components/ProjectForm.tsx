@@ -32,6 +32,7 @@ interface FormData {
 const ProjectForm = () => {
   const [showOtherResources, setShowOtherResources] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedResources, setSelectedResources] = useState<string[]>([]);
   const { register, handleSubmit, watch, formState: { errors }, reset } = useForm<FormData>();
 
   const isTeamProject = watch('isTeamProject');
@@ -49,10 +50,35 @@ const ProjectForm = () => {
     'Other',
   ];
 
+  const handleResourceChange = (resource: string, checked: boolean) => {
+    if (checked) {
+      setSelectedResources(prev => [...prev, resource]);
+      if (resource === 'Other') {
+        setShowOtherResources(true);
+      }
+    } else {
+      setSelectedResources(prev => prev.filter(r => r !== resource));
+      if (resource === 'Other') {
+        setShowOtherResources(false);
+      }
+    }
+  };
+
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     
     try {
+      // Ensure resources is a proper array
+      const resourcesArray = Array.isArray(selectedResources) ? selectedResources : [];
+      
+      if (resourcesArray.length === 0) {
+        toast.error('Please select at least one resource');
+        setIsSubmitting(false);
+        return;
+      }
+
+      console.log('Selected resources:', resourcesArray);
+
       // Prepare project data for Supabase
       const projectData = {
         student_name: data.name,
@@ -69,10 +95,12 @@ const ProjectForm = () => {
         description: data.description,
         expected_outcomes: data.expectedOutcomes || null,
         duration: data.duration,
-        required_resources: data.resources || [],
+        required_resources: resourcesArray, // Now properly formatted as array
         other_resources: data.otherResources || null,
         status: 'pending' as const,
       };
+
+      console.log('Submitting project data:', projectData);
 
       // Insert project into Supabase
       const { data: project, error } = await supabase
@@ -90,8 +118,9 @@ const ProjectForm = () => {
       console.log('Project submitted successfully:', project);
       toast.success('Project idea submitted successfully! You\'ll receive a confirmation email shortly.');
       
-      // Reset form
+      // Reset form and state
       reset();
+      setSelectedResources([]);
       setShowOtherResources(false);
     } catch (error) {
       console.error('Unexpected error:', error);
@@ -345,18 +374,17 @@ const ProjectForm = () => {
                 <div key={resource} className="flex items-center space-x-2">
                   <Checkbox
                     id={resource}
-                    value={resource}
-                    {...register('resources')}
-                    onCheckedChange={(checked) => {
-                      if (resource === 'Other') {
-                        setShowOtherResources(checked as boolean);
-                      }
-                    }}
+                    checked={selectedResources.includes(resource)}
+                    onCheckedChange={(checked) => handleResourceChange(resource, checked as boolean)}
                   />
                   <Label htmlFor={resource} className="cursor-pointer">{resource}</Label>
                 </div>
               ))}
             </div>
+
+            {selectedResources.length === 0 && (
+              <p className="text-destructive text-sm">Please select at least one resource</p>
+            )}
 
             {showOtherResources && (
               <motion.div
@@ -392,7 +420,7 @@ const ProjectForm = () => {
           <div className="pt-6">
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || selectedResources.length === 0}
               className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-lg py-6"
             >
               {isSubmitting ? 'Submitting...' : 'Submit Project Idea'}
