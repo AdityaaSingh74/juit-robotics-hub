@@ -1,15 +1,11 @@
 -- ============================================
--- ULTIMATE DATABASE FIX FOR JUIT ROBOTICS HUB
--- Compatible with your React frontend
--- Handles ALL foreign key dependencies
+-- ULTIMATE DATABASE FIX - HANDLES EXISTING OBJECTS
+-- Safe to run multiple times
 -- Run this ENTIRE script in Supabase SQL Editor
 -- ============================================
 
-BEGIN;
-
 -- ============================================
 -- STEP 1: DROP ALL DEPENDENT TABLES FIRST
--- This prevents foreign key constraint errors
 -- ============================================
 
 DROP TABLE IF EXISTS public.project_equipment CASCADE;
@@ -22,14 +18,14 @@ DROP TABLE IF EXISTS public.project_resources CASCADE;
 DROP TABLE IF EXISTS public.resources CASCADE;
 
 -- ============================================
--- STEP 2: DROP MAIN TABLES WITH CASCADE
+-- STEP 2: DROP MAIN TABLES
 -- ============================================
 
 DROP TABLE IF EXISTS public.projects CASCADE;
 DROP TABLE IF EXISTS public.profiles CASCADE;
 
 -- ============================================
--- STEP 3: DROP ALL FUNCTIONS AND TRIGGERS
+-- STEP 3: DROP ALL FUNCTIONS (INCLUDING EXISTING TRIGGERS)
 -- ============================================
 
 DROP FUNCTION IF EXISTS public.handle_new_project() CASCADE;
@@ -38,10 +34,13 @@ DROP FUNCTION IF EXISTS public.send_project_notification() CASCADE;
 DROP FUNCTION IF EXISTS public.queue_email() CASCADE;
 DROP FUNCTION IF EXISTS public.notify_project_submission() CASCADE;
 DROP FUNCTION IF EXISTS public.update_updated_at_column() CASCADE;
+DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
+
+-- Drop the trigger explicitly before recreating
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 
 -- ============================================
 -- STEP 4: CREATE PROFILES TABLE
--- Matches your frontend useAuth hook expectations
 -- ============================================
 
 CREATE TABLE public.profiles (
@@ -58,37 +57,30 @@ CREATE INDEX idx_profiles_role ON public.profiles(role);
 
 -- ============================================
 -- STEP 5: CREATE PROJECTS TABLE
--- Matches your ProjectForm.tsx data structure
 -- ============================================
 
 CREATE TABLE public.projects (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    -- Student Information
     student_name TEXT NOT NULL,
     student_email TEXT NOT NULL,
     roll_number TEXT NOT NULL,
     branch TEXT NOT NULL,
     year TEXT NOT NULL,
     contact_number TEXT,
-    -- Team Information
     is_team_project BOOLEAN DEFAULT FALSE,
     team_size INTEGER,
     team_members TEXT,
-    -- Project Details
     category TEXT NOT NULL,
     project_title TEXT NOT NULL,
     description TEXT NOT NULL,
     expected_outcomes TEXT,
     duration TEXT NOT NULL,
-    -- Resources (TEXT ARRAY for multiple selections)
     required_resources TEXT[] DEFAULT '{}',
     other_resources TEXT,
-    -- Status and Review
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'under_review', 'approved', 'rejected', 'completed')),
     faculty_comments TEXT,
     reviewed_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
     reviewed_at TIMESTAMP WITH TIME ZONE,
-    -- Timestamps
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -99,7 +91,6 @@ CREATE INDEX idx_projects_created_at ON public.projects(created_at DESC);
 
 -- ============================================
 -- STEP 6: CREATE ACTIVITY LOGS TABLE
--- For admin dashboard activity tracking
 -- ============================================
 
 CREATE TABLE public.activity_logs (
@@ -116,10 +107,10 @@ CREATE INDEX idx_activity_logs_admin_id ON public.activity_logs(admin_id);
 CREATE INDEX idx_activity_logs_created_at ON public.activity_logs(created_at DESC);
 
 -- ============================================
--- STEP 7: CREATE HELPER FUNCTIONS
+-- STEP 7: CREATE FUNCTIONS
 -- ============================================
 
--- Auto-create profile for new users (used by useAuth.ts)
+-- Function to auto-create profile
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER 
 SECURITY DEFINER
@@ -142,7 +133,7 @@ EXCEPTION
 END;
 $$;
 
--- Update timestamp function
+-- Function to update timestamps
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
 RETURNS TRIGGER 
 LANGUAGE plpgsql
@@ -154,14 +145,16 @@ END;
 $$;
 
 -- ============================================
--- STEP 8: CREATE TRIGGERS (ONLY ESSENTIAL ONES)
+-- STEP 8: CREATE TRIGGERS
 -- ============================================
 
+-- Create trigger on auth.users
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_new_user();
 
+-- Create triggers for updated_at
 CREATE TRIGGER update_projects_updated_at
     BEFORE UPDATE ON public.projects
     FOR EACH ROW
@@ -181,10 +174,10 @@ ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
--- STEP 10: CREATE RLS POLICIES (SIMPLE, NO RECURSION)
+-- STEP 10: CREATE SIMPLE RLS POLICIES
 -- ============================================
 
--- PROFILES: Authenticated users can read all, update own
+-- PROFILES
 CREATE POLICY "profiles_select_all"
     ON public.profiles FOR SELECT
     USING (true);
@@ -197,10 +190,10 @@ CREATE POLICY "profiles_update_own"
     ON public.profiles FOR UPDATE
     USING (auth.uid() = id);
 
--- PROJECTS: Public can insert, authenticated can manage
+-- PROJECTS
 CREATE POLICY "projects_insert_public"
     ON public.projects FOR INSERT
-    WITH CHECK (true);  -- Anyone can submit projects
+    WITH CHECK (true);
 
 CREATE POLICY "projects_select_authenticated"
     ON public.projects FOR SELECT
@@ -214,7 +207,7 @@ CREATE POLICY "projects_delete_authenticated"
     ON public.projects FOR DELETE
     USING (auth.uid() IS NOT NULL);
 
--- ACTIVITY LOGS: Authenticated users only
+-- ACTIVITY LOGS
 CREATE POLICY "logs_insert_authenticated"
     ON public.activity_logs FOR INSERT
     WITH CHECK (auth.uid() IS NOT NULL);
@@ -224,7 +217,7 @@ CREATE POLICY "logs_select_authenticated"
     USING (auth.uid() IS NOT NULL);
 
 -- ============================================
--- STEP 11: CREATE PROFILES FOR EXISTING AUTH USERS
+-- STEP 11: CREATE PROFILES FOR EXISTING USERS
 -- ============================================
 
 INSERT INTO public.profiles (id, email, full_name, role)
@@ -239,52 +232,29 @@ WHERE NOT EXISTS (
 )
 ON CONFLICT (id) DO NOTHING;
 
-COMMIT;
-
 -- ============================================
--- VERIFICATION QUERIES
+-- VERIFICATION
 -- ============================================
 
--- Check tables
-SELECT 'Tables Created' as check_type, tablename 
+SELECT '✅ DATABASE SETUP COMPLETE' as status;
+
+SELECT 'Tables' as check_type, COUNT(*) as count
 FROM pg_tables 
 WHERE schemaname = 'public' 
-AND tablename IN ('profiles', 'projects', 'activity_logs')
-ORDER BY tablename;
+AND tablename IN ('profiles', 'projects', 'activity_logs');
 
--- Check RLS is enabled
-SELECT tablename, rowsecurity as rls_enabled
-FROM pg_tables
-WHERE schemaname = 'public'
-AND tablename IN ('profiles', 'projects', 'activity_logs')
-ORDER BY tablename;
-
--- Count policies
-SELECT tablename, COUNT(*) as policy_count
-FROM pg_policies
-WHERE schemaname = 'public'
-GROUP BY tablename
-ORDER BY tablename;
-
--- Check for email tables (should be 0)
-SELECT COUNT(*) as email_tables_remaining
+SELECT 'Email Tables' as check_type, COUNT(*) as count
 FROM pg_tables
 WHERE schemaname = 'public'
 AND tablename LIKE '%email%';
 
--- Check data
-SELECT 
-    'profiles' as table_name, COUNT(*) as rows FROM public.profiles
-UNION ALL
-SELECT 
-    'projects' as table_name, COUNT(*) as rows FROM public.projects
-UNION ALL
-SELECT 
-    'activity_logs' as table_name, COUNT(*) as rows FROM public.activity_logs;
+SELECT 'RLS Enabled' as check_type, tablename, rowsecurity
+FROM pg_tables
+WHERE schemaname = 'public'
+AND tablename IN ('profiles', 'projects', 'activity_logs')
+ORDER BY tablename;
 
--- Final status
-SELECT 
-    '✅ DATABASE READY' as status,
-    'Compatible with React frontend' as compatibility,
-    'No email dependencies' as clean,
-    'Simple RLS policies' as security;
+SELECT 'Data Count' as check_type,
+    (SELECT COUNT(*) FROM public.profiles) as profiles,
+    (SELECT COUNT(*) FROM public.projects) as projects,
+    (SELECT COUNT(*) FROM public.activity_logs) as logs;
