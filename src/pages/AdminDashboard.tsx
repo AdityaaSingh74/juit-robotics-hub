@@ -15,11 +15,12 @@ import { Tables } from '@/integrations/supabase/types';
 type Project = Tables<'projects'>;
 
 const AdminDashboard = () => {
-  const { user, profile, signOut, loading, isAdmin } = useAuth();
+  const { user, profile, signOut, loading: authLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
@@ -29,26 +30,41 @@ const AdminDashboard = () => {
   });
 
   useEffect(() => {
-    if (!loading && !user) {
-      navigate('/admin');
+    // Only redirect if auth check is complete
+    if (!authLoading) {
+      setHasCheckedAuth(true);
+      if (!user) {
+        console.log('No user found, redirecting to login...');
+        navigate('/admin');
+      } else if (!isAdmin) {
+        console.log('User is not admin, access denied');
+        toast.error('Access denied. Admin privileges required.');
+      }
     }
-  }, [user, loading, navigate]);
+  }, [user, authLoading, isAdmin, navigate]);
 
   useEffect(() => {
-    if (user && isAdmin) {
+    if (user && isAdmin && hasCheckedAuth) {
+      console.log('Fetching projects...');
       fetchProjects();
     }
-  }, [user, isAdmin]);
+  }, [user, isAdmin, hasCheckedAuth]);
 
   const fetchProjects = async () => {
+    setLoadingProjects(true);
     try {
+      console.log('Fetching projects from database...');
       const { data, error } = await supabase
         .from('projects')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching projects:', error);
+        throw error;
+      }
 
+      console.log(`Fetched ${data?.length || 0} projects`);
       setProjects(data || []);
       
       // Calculate stats
@@ -59,18 +75,29 @@ const AdminDashboard = () => {
       const underReview = data?.filter(p => p.status === 'under_review').length || 0;
 
       setStats({ total, pending, approved, rejected, underReview });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching projects:', error);
-      toast.error('Failed to fetch projects');
+      
+      // Check if it's a table not found error
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        toast.error('Projects table not found. Please run database migrations.');
+      } else {
+        toast.error('Failed to fetch projects. Check console for details.');
+      }
     } finally {
       setLoadingProjects(false);
     }
   };
 
   const handleSignOut = async () => {
-    await signOut();
-    toast.success('Signed out successfully');
-    navigate('/admin');
+    try {
+      await signOut();
+      toast.success('Signed out successfully');
+      navigate('/admin');
+    } catch (error) {
+      console.error('Sign out error:', error);
+      toast.error('Error signing out');
+    }
   };
 
   const handleUpdateProject = async (projectId: string, status: string, comments: string) => {
@@ -130,19 +157,24 @@ const AdminDashboard = () => {
     return projects.filter(p => p.status === status);
   };
 
-  if (loading || loadingProjects) {
+  // Show loading during auth check
+  if (authLoading || !hasCheckedAuth) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-juit-blue via-juit-blue to-juit-light-blue flex items-center justify-center">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          className="w-16 h-16 border-4 border-accent border-t-transparent rounded-full"
-        />
+        <div className="text-center">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+            className="w-16 h-16 border-4 border-accent border-t-transparent rounded-full mx-auto mb-4"
+          />
+          <p className="text-white text-lg">Loading dashboard...</p>
+        </div>
       </div>
     );
   }
 
-  if (!isAdmin) {
+  // Show access denied if not admin
+  if (!user || !isAdmin) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-juit-blue via-juit-blue to-juit-light-blue flex items-center justify-center">
         <Card className="max-w-md">
@@ -150,6 +182,11 @@ const AdminDashboard = () => {
             <CardTitle>Access Denied</CardTitle>
             <CardDescription>You don't have permission to access this page.</CardDescription>
           </CardHeader>
+          <CardContent>
+            <Button onClick={() => navigate('/admin')} className="w-full">
+              Go to Login
+            </Button>
+          </CardContent>
         </Card>
       </div>
     );
@@ -179,153 +216,166 @@ const AdminDashboard = () => {
 
       {/* Stats Cards */}
       <div className="container mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
-              <FaProjectDiagram className="text-2xl text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{stats.total}</div>
-            </CardContent>
-          </Card>
+        {loadingProjects ? (
+          <div className="flex items-center justify-center py-12">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+              className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full"
+            />
+            <p className="ml-4 text-muted-foreground">Loading projects...</p>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
+                  <FaProjectDiagram className="text-2xl text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{stats.total}</div>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Pending</CardTitle>
-              <FaClock className="text-2xl text-yellow-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{stats.pending}</div>
-            </CardContent>
-          </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">Pending</CardTitle>
+                  <FaClock className="text-2xl text-yellow-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{stats.pending}</div>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Under Review</CardTitle>
-              <FaClipboardCheck className="text-2xl text-blue-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{stats.underReview}</div>
-            </CardContent>
-          </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">Under Review</CardTitle>
+                  <FaClipboardCheck className="text-2xl text-blue-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{stats.underReview}</div>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Approved</CardTitle>
-              <FaCheckCircle className="text-2xl text-green-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{stats.approved}</div>
-            </CardContent>
-          </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">Approved</CardTitle>
+                  <FaCheckCircle className="text-2xl text-green-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{stats.approved}</div>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Rejected</CardTitle>
-              <FaTimesCircle className="text-2xl text-red-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{stats.rejected}</div>
-            </CardContent>
-          </Card>
-        </div>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">Rejected</CardTitle>
+                  <FaTimesCircle className="text-2xl text-red-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{stats.rejected}</div>
+                </CardContent>
+              </Card>
+            </div>
 
-        {/* Projects Tabs */}
-        <Tabs defaultValue="all" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="all">All ({stats.total})</TabsTrigger>
-            <TabsTrigger value="pending">Pending ({stats.pending})</TabsTrigger>
-            <TabsTrigger value="under_review">Under Review ({stats.underReview})</TabsTrigger>
-            <TabsTrigger value="approved">Approved ({stats.approved})</TabsTrigger>
-            <TabsTrigger value="rejected">Rejected ({stats.rejected})</TabsTrigger>
-          </TabsList>
+            {/* Projects Tabs */}
+            <Tabs defaultValue="all" className="w-full">
+              <TabsList className="grid w-full grid-cols-5">
+                <TabsTrigger value="all">All ({stats.total})</TabsTrigger>
+                <TabsTrigger value="pending">Pending ({stats.pending})</TabsTrigger>
+                <TabsTrigger value="under_review">Under Review ({stats.underReview})</TabsTrigger>
+                <TabsTrigger value="approved">Approved ({stats.approved})</TabsTrigger>
+                <TabsTrigger value="rejected">Rejected ({stats.rejected})</TabsTrigger>
+              </TabsList>
 
-          {['all', 'pending', 'under_review', 'approved', 'rejected'].map((status) => (
-            <TabsContent key={status} value={status} className="mt-6">
-              <div className="grid gap-6">
-                {filterProjects(status === 'all' ? undefined : status).map((project) => (
-                  <Card key={project.id} className="hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <CardTitle className="text-xl">{project.project_title}</CardTitle>
-                          <CardDescription className="mt-2">
-                            <span className="font-semibold">{project.student_name}</span> | {project.roll_number} | {project.branch} | {project.year}
-                          </CardDescription>
-                        </div>
-                        {getStatusBadge(project.status)}
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-sm font-semibold mb-1">Category:</p>
-                          <Badge variant="outline">{project.category}</Badge>
-                        </div>
-                        
-                        <div>
-                          <p className="text-sm font-semibold mb-1">Description:</p>
-                          <p className="text-sm text-muted-foreground">{project.description}</p>
-                        </div>
-
-                        <div className="grid md:grid-cols-2 gap-4">
-                          <div>
-                            <p className="text-sm font-semibold mb-1">Duration:</p>
-                            <p className="text-sm">{project.duration}</p>
+              {['all', 'pending', 'under_review', 'approved', 'rejected'].map((status) => (
+                <TabsContent key={status} value={status} className="mt-6">
+                  <div className="grid gap-6">
+                    {filterProjects(status === 'all' ? undefined : status).map((project) => (
+                      <Card key={project.id} className="hover:shadow-lg transition-shadow">
+                        <CardHeader>
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <CardTitle className="text-xl">{project.project_title}</CardTitle>
+                              <CardDescription className="mt-2">
+                                <span className="font-semibold">{project.student_name}</span> | {project.roll_number} | {project.branch} | {project.year}
+                              </CardDescription>
+                            </div>
+                            {getStatusBadge(project.status)}
                           </div>
-                          <div>
-                            <p className="text-sm font-semibold mb-1">Resources Needed:</p>
-                            <div className="flex flex-wrap gap-1">
-                              {project.required_resources?.map((resource, idx) => (
-                                <Badge key={idx} variant="secondary" className="text-xs">{resource}</Badge>
-                              ))}
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            <div>
+                              <p className="text-sm font-semibold mb-1">Category:</p>
+                              <Badge variant="outline">{project.category}</Badge>
+                            </div>
+                            
+                            <div>
+                              <p className="text-sm font-semibold mb-1">Description:</p>
+                              <p className="text-sm text-muted-foreground">{project.description}</p>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-4">
+                              <div>
+                                <p className="text-sm font-semibold mb-1">Duration:</p>
+                                <p className="text-sm">{project.duration}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm font-semibold mb-1">Resources Needed:</p>
+                                <div className="flex flex-wrap gap-1">
+                                  {project.required_resources?.map((resource, idx) => (
+                                    <Badge key={idx} variant="secondary" className="text-xs">{resource}</Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+
+                            {project.is_team_project && (
+                              <div>
+                                <p className="text-sm font-semibold mb-1">Team Members ({project.team_size}):</p>
+                                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{project.team_members}</p>
+                              </div>
+                            )}
+
+                            {project.faculty_comments && (
+                              <div className="bg-secondary p-3 rounded">
+                                <p className="text-sm font-semibold mb-1">Faculty Comments:</p>
+                                <p className="text-sm">{project.faculty_comments}</p>
+                              </div>
+                            )}
+
+                            <div className="flex justify-between items-center pt-4 border-t">
+                              <p className="text-xs text-muted-foreground">
+                                Submitted on {new Date(project.created_at).toLocaleDateString()}
+                              </p>
+                              <Button
+                                onClick={() => setSelectedProject(project)}
+                                variant="default"
+                                className="bg-accent hover:bg-accent/90"
+                              >
+                                Review Project
+                              </Button>
                             </div>
                           </div>
-                        </div>
+                        </CardContent>
+                      </Card>
+                    ))}
 
-                        {project.is_team_project && (
-                          <div>
-                            <p className="text-sm font-semibold mb-1">Team Members ({project.team_size}):</p>
-                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{project.team_members}</p>
-                          </div>
-                        )}
-
-                        {project.faculty_comments && (
-                          <div className="bg-secondary p-3 rounded">
-                            <p className="text-sm font-semibold mb-1">Faculty Comments:</p>
-                            <p className="text-sm">{project.faculty_comments}</p>
-                          </div>
-                        )}
-
-                        <div className="flex justify-between items-center pt-4 border-t">
-                          <p className="text-xs text-muted-foreground">
-                            Submitted on {new Date(project.created_at).toLocaleDateString()}
-                          </p>
-                          <Button
-                            onClick={() => setSelectedProject(project)}
-                            variant="default"
-                            className="bg-accent hover:bg-accent/90"
-                          >
-                            Review Project
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-
-                {filterProjects(status === 'all' ? undefined : status).length === 0 && (
-                  <Card>
-                    <CardContent className="pt-6 text-center text-muted-foreground">
-                      No projects found in this category
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            </TabsContent>
-          ))}
-        </Tabs>
+                    {filterProjects(status === 'all' ? undefined : status).length === 0 && (
+                      <Card>
+                        <CardContent className="pt-6 text-center text-muted-foreground">
+                          No projects found in this category
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                </TabsContent>
+              ))}
+            </Tabs>
+          </>
+        )}
       </div>
 
       {/* Review Modal */}
