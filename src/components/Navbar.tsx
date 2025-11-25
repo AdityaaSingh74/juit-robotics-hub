@@ -69,6 +69,12 @@ const Navbar = () => {
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-accent transition-all duration-300 group-hover:w-full" />
               </motion.button>
             ))}
+            <Link
+              to="/admin"
+              className="ml-6 btn btn--outline border border-accent text-accent hover:bg-accent hover:text-accent-foreground transition-colors px-4 py-2 rounded-lg text-sm font-semibold shadow-sm"
+            >
+              Admin Login
+            </Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -101,6 +107,13 @@ const Navbar = () => {
                   {link.label}
                 </button>
               ))}
+              <Link
+                to="/admin"
+                className="block w-full text-left px-4 py-3 text-accent hover:bg-accent/10 hover:text-accent-foreground transition-colors rounded border-t border-accent/10 mt-4 font-semibold"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Admin Login
+              </Link>
             </div>
           </motion.div>
         )}
