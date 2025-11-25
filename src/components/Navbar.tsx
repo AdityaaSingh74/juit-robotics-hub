@@ -39,19 +39,15 @@ const Navbar = () => {
     >
       <div className="container-custom">
         <div className="flex items-center justify-between h-20">
-          {/* Logo */}
+          {/* Logo - Text Only */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-center space-x-3 cursor-pointer"
+            className="flex items-center space-x-2 cursor-pointer"
             onClick={() => scrollToSection('home')}
           >
-            {/* REPLACE: Logo placeholder - replace with actual logo image */}
-            <div className="w-12 h-12 rounded-full bg-accent flex items-center justify-center">
-              <span className="text-primary font-bold text-lg">JUIT</span>
-            </div>
-            <div className="hidden sm:block text-primary-foreground text-sm font-medium">
-              Robotics Lab
+            <div className="text-primary-foreground text-xl font-bold">
+              Dronobotics Lab
             </div>
           </motion.div>
 
