@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaBars, FaTimes } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
-// REPLACE: Upload your logo to src/assets/ and update filename below
-import logoImg from '@/assets/logo.png';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -41,21 +39,15 @@ const Navbar = () => {
     >
       <div className="container-custom">
         <div className="flex items-center justify-between h-20">
-          {/* Logo */}
+          {/* Logo - Text Only */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-center space-x-3 cursor-pointer"
+            className="flex items-center space-x-2 cursor-pointer"
             onClick={() => scrollToSection('home')}
           >
-            {/* REPLACE: Logo image - upload logo.png to src/assets/ folder */}
-            <img 
-              src={logoImg} 
-              alt="Dronobotics Lab Logo" 
-              className="h-12 w-auto object-contain"
-            />
-            <div className="hidden sm:block text-primary-foreground text-sm font-medium">
-              Robotics Lab
+            <div className="text-primary-foreground text-xl font-bold">
+              Dronobotics Lab
             </div>
           </motion.div>
 
