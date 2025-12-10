@@ -48,11 +48,8 @@ export const useAuth = () => {
         .single();
 
       if (error) {
-        console.error('Error fetching profile:', error);
-        
         // If profile doesn't exist, create a default one
         if (error.code === 'PGRST116') {
-          console.log('Profile not found, creating default profile...');
           const defaultProfile: Profile = {
             id: userId,
             email: userEmail,
@@ -67,7 +64,6 @@ export const useAuth = () => {
             .single();
           
           if (createError) {
-            console.error('Error creating profile:', createError);
             // Use the default profile even if insert fails
             setProfile(defaultProfile);
           } else {
@@ -86,7 +82,6 @@ export const useAuth = () => {
         setProfile(data);
       }
     } catch (error) {
-      console.error('Error in fetchProfile:', error);
       // Create fallback profile
       setProfile({
         id: userId,
@@ -104,7 +99,6 @@ export const useAuth = () => {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       return { error };
     } catch (error) {
-      console.error('Sign in error:', error);
       return { error: error as AuthError };
     }
   };
@@ -113,7 +107,7 @@ export const useAuth = () => {
     try {
       await supabase.auth.signOut();
     } catch (error) {
-      console.error('Sign out error:', error);
+      // Silently handle sign-out errors
     }
   };
 
