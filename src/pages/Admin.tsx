@@ -21,7 +21,6 @@ const Admin = () => {
     if (!loading) {
       setHasCheckedAuth(true);
       if (user && isAdmin) {
-        console.log('User authenticated, redirecting to dashboard...');
         navigate('/admin/dashboard', { replace: true });
       }
     }
@@ -38,19 +37,15 @@ const Admin = () => {
     setIsLoading(true);
     
     try {
-      console.log('Attempting login...');
       const { error } = await signIn(email, password);
       
       if (error) {
-        console.error('Login error:', error);
         toast.error(error.message || 'Invalid credentials');
       } else {
-        console.log('Login successful!');
         toast.success('Logged in successfully!');
         // Navigation will happen via useEffect
       }
     } catch (error) {
-      console.error('Unexpected error:', error);
       toast.error('An unexpected error occurred');
     } finally {
       setIsLoading(false);
