@@ -170,7 +170,7 @@ const ProjectForm = () => {
                 <Input
                   id="email"
                   type="email"
-                  {...register('email', { required: 'Email is required', pattern: { value: /^\S+@\S+$/i, message: 'Invalid email' } })}
+                  {...register('email', { required: 'Email is required', pattern: { value: /^\S+@juitsolan.in$/i, message: 'Invalid email' } })}
                   placeholder="your.email@example.com"
                   className="border-input focus:border-accent focus:ring-accent"
                 />
