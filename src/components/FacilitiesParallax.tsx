@@ -19,7 +19,6 @@ interface Facility {
 
 const facilities: Facility[] = [
   {
-    // REPLACE: Facility details and image
     title: 'Quadcopter Drone',
     category: 'Aerial Robotics',
     description: 'Professional-grade quadcopter for autonomous flight research, equipped with GPS navigation, obstacle avoidance, and FPV camera. Ideal for aerial mapping and surveillance projects.',
