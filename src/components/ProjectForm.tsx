@@ -68,7 +68,6 @@ const ProjectForm = () => {
     setIsSubmitting(true);
     
     try {
-      // Ensure resources is a proper array
       const resourcesArray = Array.isArray(selectedResources) ? selectedResources : [];
       
       if (resourcesArray.length === 0) {
@@ -77,7 +76,6 @@ const ProjectForm = () => {
         return;
       }
 
-      // Prepare project data for Supabase
       const projectData = {
         student_name: data.name,
         student_email: data.email,
@@ -98,7 +96,6 @@ const ProjectForm = () => {
         status: 'pending' as const,
       };
 
-      // Insert project into Supabase
       const { data: project, error } = await supabase
         .from('projects')
         .insert([projectData])
@@ -111,6 +108,21 @@ const ProjectForm = () => {
       }
 
       toast.success('Project idea submitted successfully! You\'ll receive a confirmation email shortly.');
+
+      try {
+        await fetch('http://localhost:3001/api/send-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: project.student_email,
+            name: project.student_name,
+          }),
+        });
+      } catch (emailError) {
+        console.error('Failed to send confirmation email:', emailError);
+      }
       
       // Reset form and state
       reset();
@@ -170,7 +182,7 @@ const ProjectForm = () => {
                 <Input
                   id="email"
                   type="email"
-                  {...register('email', { required: 'Email is required', pattern: { value: /^\S+@\S+$/i, message: 'Invalid email' } })}
+                  {...register('email', { required: 'Email is required', pattern: { value: /^\S+@juitsolan.in$/i, message: 'Invalid email' } })}
                   placeholder="your.email@example.com"
                   className="border-input focus:border-accent focus:ring-accent"
                 />
