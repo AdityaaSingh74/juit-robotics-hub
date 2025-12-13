@@ -154,13 +154,6 @@ const Admin = () => {
               Please use your faculty credentials to log in.
             </p>
           </div>
-
-          {/* Development Note */}
-          <div className="mt-4 p-3 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg border border-yellow-300 dark:border-yellow-800">
-            <p className="text-xs text-yellow-800 dark:text-yellow-200 text-center">
-              <strong>For Development:</strong> Create an admin user in Supabase Auth first, then login here.
-            </p>
-          </div>
         </div>
       </motion.div>
     </div>

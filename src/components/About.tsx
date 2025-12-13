@@ -32,7 +32,7 @@ const About = () => {
             className="space-y-6"
           >
             <p className="text-lg text-foreground/90 leading-relaxed">
-              The JUIT Dronobotics Lab is a cutting-edge research facility dedicated to advancing robotics technology. Our lab focuses on autonomous systems, human-robot interaction, and industrial automation, providing students with hands-on experience in the latest robotics innovations.
+              The JUIT Drobotics Lab is a cutting-edge research facility dedicated to advancing robotics technology. Our lab focuses on autonomous systems, human-robot interaction, and industrial automation, providing students with hands-on experience in the latest robotics innovations.
             </p>
             <p className="text-lg text-foreground/90 leading-relaxed">
               We foster a collaborative environment where students and faculty work together on groundbreaking projects, from aerial robotics and legged locomotion to dexterous manipulation and AI-powered edge computing.
