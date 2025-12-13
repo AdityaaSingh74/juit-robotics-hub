@@ -32,7 +32,7 @@ const About = () => {
             className="space-y-6"
           >
             <p className="text-lg text-foreground/90 leading-relaxed">
-              The JUIT Robotics & Automation Lab is a cutting-edge research facility dedicated to advancing robotics technology. Our lab focuses on autonomous systems, human-robot interaction, and industrial automation, providing students with hands-on experience in the latest robotics innovations.
+              The JUIT Drobotics Lab is a cutting-edge research facility dedicated to advancing robotics technology. Our lab focuses on autonomous systems, human-robot interaction, and industrial automation, providing students with hands-on experience in the latest robotics innovations.
             </p>
             <p className="text-lg text-foreground/90 leading-relaxed">
               We foster a collaborative environment where students and faculty work together on groundbreaking projects, from aerial robotics and legged locomotion to dexterous manipulation and AI-powered edge computing.
@@ -56,7 +56,7 @@ const About = () => {
 
         {/* Statistics */}
         <div className="grid sm:grid-cols-3 gap-8">
-          {stats.map((stat, index) => (
+          {/* {stats.map((stat, index) => (
             <motion.div
               key={stat.label}
               initial={{ opacity: 0, y: 30 }}
@@ -67,7 +67,7 @@ const About = () => {
               <div className="text-5xl font-bold text-accent mb-2">{stat.number}</div>
               <div className="text-lg text-muted-foreground font-medium">{stat.label}</div>
             </motion.div>
-          ))}
+          ))} */}
         </div>
       </div>
     </section>

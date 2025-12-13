@@ -12,7 +12,7 @@ const Footer = () => {
         <div className="grid md:grid-cols-3 gap-8 mb-8">
           {/* Lab Info */}
           <div>
-            <div className="text-accent text-2xl font-bold mb-2">JUIT Robotics Lab</div>
+            <div className="text-accent text-2xl font-bold mb-2">Drobotics Lab</div>
             <p className="text-sm text-primary-foreground/80 mb-4">
               Innovating the Future of Robotics
             </p>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,24 +7,33 @@ import { FaUser, FaLock } from 'react-icons/fa';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { useEffect } from 'react';
 
 const Admin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn, user, loading } = useAuth();
+  const { signIn, user, loading, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
 
   useEffect(() => {
-    // If already logged in, redirect to dashboard
-    if (!loading && user) {
-      navigate('/admin/dashboard');
+    // Only redirect if loading is complete and user is authenticated
+    if (!loading) {
+      setHasCheckedAuth(true);
+      if (user && isAdmin) {
+        navigate('/admin/dashboard', { replace: true });
+      }
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, isAdmin, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email || !password) {
+      toast.error('Please enter both email and password');
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
@@ -34,7 +43,7 @@ const Admin = () => {
         toast.error(error.message || 'Invalid credentials');
       } else {
         toast.success('Logged in successfully!');
-        navigate('/admin/dashboard');
+        // Navigation will happen via useEffect
       }
     } catch (error) {
       toast.error('An unexpected error occurred');
@@ -43,7 +52,8 @@ const Admin = () => {
     }
   };
 
-  if (loading) {
+  // Show loading only during initial auth check
+  if (loading || !hasCheckedAuth) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-juit-blue via-juit-blue to-juit-light-blue flex items-center justify-center">
         <motion.div
@@ -51,6 +61,21 @@ const Admin = () => {
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
           className="w-16 h-16 border-4 border-accent border-t-transparent rounded-full"
         />
+        <p className="ml-4 text-white">Checking authentication...</p>
+      </div>
+    );
+  }
+
+  // If already logged in and is admin, don't show login form
+  if (user && isAdmin) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-juit-blue via-juit-blue to-juit-light-blue flex items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          className="w-16 h-16 border-4 border-accent border-t-transparent rounded-full"
+        />
+        <p className="ml-4 text-white">Redirecting to dashboard...</p>
       </div>
     );
   }
@@ -84,6 +109,7 @@ const Admin = () => {
                   placeholder="admin@juit.ac.in"
                   className="pl-10 border-input focus:border-accent focus:ring-accent"
                   required
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -100,6 +126,7 @@ const Admin = () => {
                   placeholder="Enter password"
                   className="pl-10 border-input focus:border-accent focus:ring-accent"
                   required
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -125,13 +152,6 @@ const Admin = () => {
             <p className="text-xs text-muted-foreground text-center">
               This is the admin panel for faculty to review and approve student project submissions.
               Please use your faculty credentials to log in.
-            </p>
-          </div>
-
-          {/* Development Note */}
-          <div className="mt-4 p-3 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg border border-yellow-300 dark:border-yellow-800">
-            <p className="text-xs text-yellow-800 dark:text-yellow-200 text-center">
-              <strong>For Development:</strong> Create an admin user in Supabase Auth first, then login here.
             </p>
           </div>
         </div>

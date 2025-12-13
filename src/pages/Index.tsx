@@ -2,7 +2,7 @@ import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import About from '@/components/About';
 import EquipmentShowcase from '@/components/EquipmentShowcase';
-import LabGallery from '@/components/LabGallery';
+import FacilitiesParallax from '@/components/FacilitiesParallax';
 import Faculty from '@/components/Faculty';
 import ProjectForm from '@/components/ProjectForm';
 import Footer from '@/components/Footer';
@@ -14,7 +14,7 @@ const Index = () => {
       <Hero />
       <About />
       <EquipmentShowcase />
-      <LabGallery />
+      <FacilitiesParallax />
       <Faculty />
       <ProjectForm />
       <Footer />

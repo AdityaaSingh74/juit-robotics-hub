@@ -37,7 +37,7 @@ const Hero = () => {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="text-5xl md:text-7xl font-bold mb-6"
         >
-          JUIT Robotics & Automation Lab
+          Drobotics Lab
         </motion.h1>
         
         <motion.p
@@ -46,7 +46,7 @@ const Hero = () => {
           transition={{ duration: 0.8, delay: 0.4 }}
           className="text-2xl md:text-3xl text-accent mb-12"
         >
-          Pioneering Innovation in Robotics Research
+          Advancing Innovation in Robotics Research
         </motion.p>
 
         <motion.div

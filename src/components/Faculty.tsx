@@ -14,33 +14,33 @@ const Faculty = () => {
   const faculty: FacultyMember[] = [
     {
       // REPLACE: Faculty member 1 details
-      name: 'Dr. Aman Kumar',
-      designation: 'Associate Professor & Lab Director',
+      name: 'Dr. Aman Sharma',
+      designation: 'Assistant Professor (Senior Grade)',
       specialization: 'Autonomous Systems & Robotics',
       // REPLACE: LinkedIn profile URL
-      linkedin: 'https://linkedin.com/in/placeholder',
+      linkedin: 'https://www.linkedin.com/in/dr-aman-sharma-9186485b',
       // REPLACE: Faculty member 1 photo
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
+      image: '/AmanSir.jpeg',
     },
     {
       // REPLACE: Faculty member 2 details
-      name: 'Dr. Priya Sharma',
-      designation: 'Assistant Professor',
+      name: 'Dr. Shruti Jain',
+      designation: 'Associate Dean (Inn) and Professor',
       specialization: 'Computer Vision & Machine Learning',
       // REPLACE: LinkedIn profile URL
-      linkedin: 'https://linkedin.com/in/placeholder',
+      linkedin: 'https://www.linkedin.com/in/dr-shruti-jain-92705b130',
       // REPLACE: Faculty member 2 photo
-      image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop',
+      image: '/ShruitiMaam.jpeg',
     },
     {
       // REPLACE: Faculty member 3 details
-      name: 'Dr. Rajesh Verma',
-      designation: 'Assistant Professor',
+      name: 'Dr. Vikas Baghel',
+      designation: 'Associate Professor',
       specialization: 'Robotic Manipulation & Control Systems',
       // REPLACE: LinkedIn profile URL
-      linkedin: 'https://linkedin.com/in/placeholder',
+      linkedin: 'https://www.juit.ac.in/faculty.php?id=374&dep=ece&page=0',
       // REPLACE: Faculty member 3 photo
-      image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop',
+      image: '/VikasSir.jpeg',
     },
   ];
 
@@ -56,7 +56,7 @@ const Faculty = () => {
         >
           <h2 className="section-title gold-underline inline-block">Faculty Coordinators</h2>
           <p className="text-xl text-muted-foreground mt-4">
-            Expert mentors guiding robotics innovation and research
+            Meet our esteemed mentors that guide us towards robotics innovation and research
           </p>
         </motion.div>
 

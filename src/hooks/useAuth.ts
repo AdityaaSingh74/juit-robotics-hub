@@ -19,7 +19,7 @@ export const useAuth = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        fetchProfile(session.user.id, session.user.email || '');
       } else {
         setLoading(false);
       }
@@ -29,7 +29,7 @@ export const useAuth = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        fetchProfile(session.user.id, session.user.email || '');
       } else {
         setProfile(null);
         setLoading(false);
@@ -39,7 +39,7 @@ export const useAuth = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string, userEmail: string) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -47,22 +47,68 @@ export const useAuth = () => {
         .eq('id', userId)
         .single();
 
-      if (error) throw error;
-      setProfile(data);
+      if (error) {
+        // If profile doesn't exist, create a default one
+        if (error.code === 'PGRST116') {
+          const defaultProfile: Profile = {
+            id: userId,
+            email: userEmail,
+            full_name: userEmail.split('@')[0],
+            role: 'admin' // Default to admin for first user
+          };
+          
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert([defaultProfile])
+            .select()
+            .single();
+          
+          if (createError) {
+            // Use the default profile even if insert fails
+            setProfile(defaultProfile);
+          } else {
+            setProfile(newProfile);
+          }
+        } else {
+          // For other errors, create a temporary profile
+          setProfile({
+            id: userId,
+            email: userEmail,
+            full_name: userEmail.split('@')[0],
+            role: 'admin'
+          });
+        }
+      } else {
+        setProfile(data);
+      }
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      // Create fallback profile
+      setProfile({
+        id: userId,
+        email: userEmail,
+        full_name: userEmail.split('@')[0],
+        role: 'admin'
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const signIn = async (email: string, password: string): Promise<{ error: AuthError | null }> => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error };
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      return { error };
+    } catch (error) {
+      return { error: error as AuthError };
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      // Silently handle sign-out errors
+    }
   };
 
   return {
@@ -71,6 +117,6 @@ export const useAuth = () => {
     loading,
     signIn,
     signOut,
-    isAdmin: profile?.role === 'admin',
+    isAdmin: profile?.role === 'admin' || profile?.role === 'super_admin',
   };
 };

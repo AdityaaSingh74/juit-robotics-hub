@@ -32,6 +32,7 @@ interface FormData {
 const ProjectForm = () => {
   const [showOtherResources, setShowOtherResources] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedResources, setSelectedResources] = useState<string[]>([]);
   const { register, handleSubmit, watch, formState: { errors }, reset } = useForm<FormData>();
 
   const isTeamProject = watch('isTeamProject');
@@ -49,11 +50,32 @@ const ProjectForm = () => {
     'Other',
   ];
 
+  const handleResourceChange = (resource: string, checked: boolean) => {
+    if (checked) {
+      setSelectedResources(prev => [...prev, resource]);
+      if (resource === 'Other') {
+        setShowOtherResources(true);
+      }
+    } else {
+      setSelectedResources(prev => prev.filter(r => r !== resource));
+      if (resource === 'Other') {
+        setShowOtherResources(false);
+      }
+    }
+  };
+
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     
     try {
-      // Prepare project data for Supabase
+      const resourcesArray = Array.isArray(selectedResources) ? selectedResources : [];
+      
+      if (resourcesArray.length === 0) {
+        toast.error('Please select at least one resource');
+        setIsSubmitting(false);
+        return;
+      }
+
       const projectData = {
         student_name: data.name,
         student_email: data.email,
@@ -69,12 +91,11 @@ const ProjectForm = () => {
         description: data.description,
         expected_outcomes: data.expectedOutcomes || null,
         duration: data.duration,
-        required_resources: data.resources || [],
+        required_resources: resourcesArray,
         other_resources: data.otherResources || null,
         status: 'pending' as const,
       };
 
-      // Insert project into Supabase
       const { data: project, error } = await supabase
         .from('projects')
         .insert([projectData])
@@ -82,19 +103,32 @@ const ProjectForm = () => {
         .single();
 
       if (error) {
-        console.error('Error submitting project:', error);
         toast.error(`Failed to submit project: ${error.message}`);
         return;
       }
 
-      console.log('Project submitted successfully:', project);
       toast.success('Project idea submitted successfully! You\'ll receive a confirmation email shortly.');
+
+      try {
+        await fetch('http://localhost:3001/api/send-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: project.student_email,
+            name: project.student_name,
+          }),
+        });
+      } catch (emailError) {
+        console.error('Failed to send confirmation email:', emailError);
+      }
       
-      // Reset form
+      // Reset form and state
       reset();
+      setSelectedResources([]);
       setShowOtherResources(false);
     } catch (error) {
-      console.error('Unexpected error:', error);
       toast.error('An unexpected error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -148,8 +182,8 @@ const ProjectForm = () => {
                 <Input
                   id="email"
                   type="email"
-                  {...register('email', { required: 'Email is required', pattern: { value: /^\S+@\S+$/i, message: 'Invalid email' } })}
-                  placeholder="your.email@example.com"
+                  {...register('email', { required: 'Email is required', pattern: { value: /^\S+@juitsolan.in$/i, message: 'Invalid email' } })}
+                  placeholder="your.email@juitsolan.in"
                   className="border-input focus:border-accent focus:ring-accent"
                 />
                 {errors.email && <p className="text-destructive text-sm">{errors.email.message}</p>}
@@ -310,10 +344,10 @@ const ProjectForm = () => {
               </div>
 
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="description">Project Description * (100-1000 characters)</Label>
+                <Label htmlFor="description">Project Description * (max 1000 characters)</Label>
                 <Textarea
                   id="description"
-                  {...register('description', { required: 'Description is required', minLength: 100, maxLength: 1000 })}
+                  {...register('description', { required: 'Description is required', maxLength: 1000 })}
                   placeholder="Describe your project idea..."
                   rows={6}
                   className="border-input focus:border-accent focus:ring-accent"
@@ -345,18 +379,17 @@ const ProjectForm = () => {
                 <div key={resource} className="flex items-center space-x-2">
                   <Checkbox
                     id={resource}
-                    value={resource}
-                    {...register('resources')}
-                    onCheckedChange={(checked) => {
-                      if (resource === 'Other') {
-                        setShowOtherResources(checked as boolean);
-                      }
-                    }}
+                    checked={selectedResources.includes(resource)}
+                    onCheckedChange={(checked) => handleResourceChange(resource, checked as boolean)}
                   />
                   <Label htmlFor={resource} className="cursor-pointer">{resource}</Label>
                 </div>
               ))}
             </div>
+
+            {selectedResources.length === 0 && (
+              <p className="text-destructive text-sm">Please select at least one resource</p>
+            )}
 
             {showOtherResources && (
               <motion.div
@@ -392,7 +425,7 @@ const ProjectForm = () => {
           <div className="pt-6">
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || selectedResources.length === 0}
               className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-lg py-6"
             >
               {isSubmitting ? 'Submitting...' : 'Submit Project Idea'}

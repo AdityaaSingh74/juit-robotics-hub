@@ -27,7 +27,6 @@ const Navbar = () => {
     { id: 'home', label: 'Home' },
     { id: 'about', label: 'About' },
     { id: 'equipment', label: 'Equipment' },
-    { id: 'gallery', label: 'Lab' },
     { id: 'faculty', label: 'Faculty' },
     { id: 'projects', label: 'Projects' },
   ];
@@ -40,17 +39,15 @@ const Navbar = () => {
     >
       <div className="container-custom">
         <div className="flex items-center justify-between h-20">
-          {/* Logo */}
+          {/* Logo - Text Only */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-center space-x-3 cursor-pointer"
+            className="flex items-center space-x-2 cursor-pointer"
             onClick={() => scrollToSection('home')}
           >
-            {/* <!-- LOGO: Replace with juitlogo.png (300x80px recommended) --> */}
-            <div className="text-accent text-2xl font-bold">JUIT</div>
-            <div className="hidden sm:block text-primary-foreground text-sm font-medium">
-              Robotics Lab
+            <div className="text-primary-foreground text-xl font-bold">
+              Drobotics Lab
             </div>
           </motion.div>
 
