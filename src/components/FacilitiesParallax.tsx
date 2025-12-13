@@ -7,6 +7,7 @@ import roboticArmImg from '@/assets/RoboHandKit.jpeg';
 import roboticHandsImg from '@/assets/robotic-arm.jpg';
 import arduinoImg from '@/assets/ArdinoMotor.png';
 import jetsonNanoImg from '@/assets/JetsonNano.png';
+import greenroboImg from '@/assets/green-robo.png';
 
 interface Facility {
   title: string;
@@ -25,6 +26,18 @@ const facilities: Facility[] = [
     specs: ['12 DOF', 'Real-time gait control', 'IMU sensors'],
     image: roboticDogImg,
     imageAlt: 'Quadruped Robotic Dog',
+  },
+  {
+    title: 'Autonomous Mobile Manipulator',
+    category: 'Wheeled Robotics & Manipulation',
+    description: 'A modular wheeled mobile robot equipped with a robotic arm and depth vision system, designed for autonomous navigation, object manipulation, and real-world AI experimentation.',
+    specs: [
+      '4-wheel differential drive',
+      'RGB-D depth camera',
+      'Onboard compute unit'
+    ],
+    image: greenroboImg,
+    imageAlt: 'Autonomous wheeled mobile robot with robotic arm and depth camera'
   },
   {
     // REPLACE: Facility details and image

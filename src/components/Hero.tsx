@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import heroBg from '@/assets/hero-bg.jpg';
+import heroBgVideo from '@/assets/hero-bg.mp4';
 
 const Hero = () => {
   const scrollToEquipment = () => {
@@ -12,7 +12,7 @@ const Hero = () => {
 
   return (
     <section id="home" className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background Image with Overlay */}
+      {/* Background Video with Overlay */}
       <div className="absolute inset-0">
         <motion.div
           initial={{ scale: 1.1 }}
@@ -20,13 +20,18 @@ const Hero = () => {
           transition={{ duration: 1.5 }}
           className="absolute inset-0"
         >
-          <img
-            src={heroBg}
-            alt="JUIT Robotics Lab"
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
             className="w-full h-full object-cover"
-          />
+          >
+            <source src={heroBgVideo} type="video/mp4" />
+          </video>
         </motion.div>
         <div className="absolute inset-0 bg-gradient-to-b from-juit-blue/85 to-juit-blue/60" />
+        <div className="absolute inset-0 bg-gray-900/20 backdrop-blur-sm" />
       </div>
 
       {/* Content */}
