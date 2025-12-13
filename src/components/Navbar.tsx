@@ -47,7 +47,7 @@ const Navbar = () => {
             onClick={() => scrollToSection('home')}
           >
             <div className="text-primary-foreground text-xl font-bold">
-              Dronobotics Lab
+              Drobotics Lab
             </div>
           </motion.div>
 

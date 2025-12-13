@@ -344,10 +344,10 @@ const ProjectForm = () => {
               </div>
 
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="description">Project Description * (100-1000 characters)</Label>
+                <Label htmlFor="description">Project Description * (max 1000 characters)</Label>
                 <Textarea
                   id="description"
-                  {...register('description', { required: 'Description is required', minLength: 100, maxLength: 1000 })}
+                  {...register('description', { required: 'Description is required', maxLength: 1000 })}
                   placeholder="Describe your project idea..."
                   rows={6}
                   className="border-input focus:border-accent focus:ring-accent"
