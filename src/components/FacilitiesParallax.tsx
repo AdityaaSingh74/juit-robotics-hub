@@ -4,7 +4,7 @@ import { useRef } from 'react';
 import droneImg from '@/assets/Drone1.jpeg';
 import roboticDogImg from '@/assets/RoboDog2.jpg';
 import roboticArmImg from '@/assets/RoboHandKit.jpeg';
-import roboticHandsImg from '@/assets/robotic-hands.jpg';
+import roboticHandsImg from '@/assets/robotic-arm.jpg';
 import arduinoImg from '@/assets/ArdinoMotor.png';
 import jetsonNanoImg from '@/assets/JetsonNano.png';
 
@@ -19,15 +19,6 @@ interface Facility {
 
 const facilities: Facility[] = [
   {
-    title: 'Quadcopter Drone',
-    category: 'Aerial Robotics',
-    description: 'Professional-grade quadcopter for autonomous flight research, equipped with GPS navigation, obstacle avoidance, and FPV camera. Ideal for aerial mapping and surveillance projects.',
-    specs: ['Flight time: 25 minutes', 'Programmable with Python/ROS', '4K camera with gimbal stabilization'],
-    image: droneImg,
-    imageAlt: 'Quadcopter Drone',
-  },
-  {
-    // REPLACE: Facility details and image
     title: 'Quadruped Robotic Dog',
     category: 'Legged Locomotion',
     description: 'Advanced four-legged robot platform for studying dynamic movement, balance, and terrain adaptation using reinforcement learning.',
@@ -37,19 +28,28 @@ const facilities: Facility[] = [
   },
   {
     // REPLACE: Facility details and image
-    title: '6-Axis Robotic Arm',
-    category: 'Manipulation & Assembly',
-    description: 'Industrial-grade robotic arm for precision manipulation, pick-and-place operations, and assembly automation research.',
-    specs: ['6 DOF', '1kg payload', '0.1mm repeatability'],
+    title: 'Quadcopter Drone',
+    category: 'Aerial Robotics',
+    description: 'Lightweight quadcopter for autonomous flight experiments, featuring GPS and an FPV camera. Suited for student projects in aerial imaging and navigation.',
+    specs: ['Light weight', 'Attachments Editable', 'HD Camera for ariel imaging'],
+    image: droneImg,
+    imageAlt: 'Quadcopter Drone',
+  },
+  {
+    // REPLACE: Facility details and image
+    title: 'Robotic Arm Kit',
+    category: 'Learning & Assembly',
+    description: 'Learning-grade robotic kit for pick-and-place operations, and assembly automation research.',
+    specs: ['Programable on Ardiuno', '6-axis movment', 'Claw gripper'],
     image: roboticArmImg,
     imageAlt: 'Robotic Arm',
   },
   {
     // REPLACE: Facility details and image
-    title: 'Anthropomorphic Robotic Hand',
-    category: 'Dexterous Manipulation',
-    description: 'Bio-inspired robotic hand with individually actuated fingers for grasping research and human-robot interaction studies.',
-    specs: ['5 fingers', 'Force feedback', 'Adaptive grip'],
+    title: '3D Printer (FDM)',
+    category: 'Additive Manufacturing',
+    description: '3D printer for rapid prototyping and fabrication of mechanical parts, enclosures, and functional models.',
+    specs: ['Build volume: 220 × 220 × 250 mm', 'Layer resolution: 0.1–0.3 mm', 'Materials: PLA, PETG, TPU'],
     image: roboticHandsImg,
     imageAlt: 'Robotic Hand',
   },
