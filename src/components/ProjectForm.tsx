@@ -118,6 +118,8 @@ const ProjectForm = () => {
           body: JSON.stringify({
             email: project.student_email,
             name: project.student_name,
+            emailType: 'submission',
+            projectName: project.project_title,
           }),
         });
       } catch (emailError) {
