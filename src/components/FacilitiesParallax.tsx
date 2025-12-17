@@ -77,12 +77,18 @@ const facilities: Facility[] = [
   },
   {
     // REPLACE: Facility details and image
-    title: 'NVIDIA Jetson Nano AI Platform',
+    title: 'NVIDIA Jetson Orin Nano AI',
     category: 'Edge AI Computing',
-    description: 'Powerful AI computing platform for computer vision, deep learning inference, and autonomous systems at the edge.',
-    specs: ['128 CUDA cores', '4GB RAM', 'TensorFlow/PyTorch support'],
+    description: 'High-performance edge AI platform designed for advanced computer vision, deep learning, and autonomous applications.',
+    specs: [
+      'AI Performance: 67 INT8 TOPS',
+      'GPU: NVIDIA Ampere architecture with 1024 CUDA cores and 32 Tensor Cores',
+      'CPU: 6-core Arm® Cortex®-A78AE v8.2 64-bit (1.5MB L2 + 4MB L3)',
+      'Memory: 8GB 128-bit LPDDR5',
+      'Memory Bandwidth: 102 GB/s'
+    ],
     image: jetsonNanoImg,
-    imageAlt: 'Jetson Nano',
+    imageAlt: 'NVIDIA Jetson Orin Nano'
   },
 ];
 
