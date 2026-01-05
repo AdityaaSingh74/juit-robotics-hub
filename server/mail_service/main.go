@@ -7,16 +7,33 @@ import (
 	"net/http"
 	"net/smtp"
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
 
 type EmailRequest struct {
-	Email       string `json:"email"`
-	Name        string `json:"name"`
-	EmailType   string `json:"emailType"`   // "submission", "approved", "rejected"
-	ProjectName string `json:"projectName"` 
-	Comments    string `json:"comments"` 
+	Email              string   `json:"email"`
+	Name               string   `json:"name"`
+	EmailType          string   `json:"emailType"`   // "submission", "approved", "rejected", "faculty_notification"
+	ProjectName        string   `json:"projectName"`
+	Comments           string   `json:"comments"`
+	StudentEmail       string   `json:"studentEmail,omitempty"`
+	StudentName        string   `json:"studentName,omitempty"`
+	RollNumber         string   `json:"rollNumber,omitempty"`
+	Branch             string   `json:"branch,omitempty"`
+	Year               string   `json:"year,omitempty"`
+	Category           string   `json:"category,omitempty"`
+	Description        string   `json:"description,omitempty"`
+	ResourcesArray     []string `json:"resourcesArray,omitempty"`
+	ResourceDescription string   `json:"resourceDescription,omitempty"`
+}
+
+// Faculty heads emails - EDIT HERE to add/remove faculty
+var FACULTY_EMAILS = []string{
+	"head1@juitsolan.in",      // Faculty Head 1
+	"head2@juitsolan.in",      // Faculty Head 2
+	"head3@juitsolan.in",      // Faculty Head 3
 }
 
 func MailSENDER(subject string, body string, to []string) error {
@@ -32,7 +49,7 @@ func MailSENDER(subject string, body string, to []string) error {
 
 	// Proper email formatting with headers
 	msg := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\n\r\n%s",
-		from, to[0], subject, body)
+		from, strings.Join(to, ", "), subject, body)
 
 	err := smtp.SendMail(
 		"smtp.gmail.com:587",
@@ -47,12 +64,12 @@ func MailSENDER(subject string, body string, to []string) error {
 		return err
 	}
 
-	log.Println("Email sent successfully to", to)
+	log.Printf("Email sent successfully to %d recipient(s)", len(to))
 	return nil
 }
 
-// I used AI to write the body , 
-func generateEmailContent(req EmailRequest) (string, string, error) {
+// generateStudentEmailContent creates email for students
+func generateStudentEmailContent(req EmailRequest) (string, string, error) {
 	var subject, body string
 
 	switch req.EmailType {
@@ -60,7 +77,7 @@ func generateEmailContent(req EmailRequest) (string, string, error) {
 		subject = "Project Submission Confirmation - JUIT Robotics Hub"
 		body = fmt.Sprintf(`Hi %s,
 
-Thank you for submitting your project idea to the JUIT Robotics Hub. 
+Thank you for submitting your project idea to the JUIT Robotics Hub.
 
 We have received your submission and our team will review it shortly. You will receive an update within 3-5 business days.
 
@@ -117,6 +134,73 @@ The JUIT Robotics Hub Team`, req.Name, req.ProjectName, getCommentsSection(req.C
 	return subject, body, nil
 }
 
+// generateFacultyEmailContent creates email for faculty when new project is submitted
+func generateFacultyEmailContent(req EmailRequest) (string, string, error) {
+	if req.EmailType != "faculty_notification" {
+		return "", "", fmt.Errorf("invalid email type for faculty: %s", req.EmailType)
+	}
+
+	subject := "New Project Submission for Review - JUIT Robotics Hub"
+
+	// Format resources as a list
+	resourcesStr := ""
+	if len(req.ResourcesArray) > 0 {
+		for i, resource := range req.ResourcesArray {
+			if i > 0 {
+				resourcesStr += "\n  - "
+			} else {
+				resourcesStr = "- "
+			}
+			resourcesStr += resource
+		}
+	}
+
+	body := fmt.Sprintf(`New Project Submission - Faculty Review Required
+
+========== PROJECT SUBMISSION DETAILS ==========
+
+Student Information:
+- Name: %s
+- Email: %s
+- Roll Number: %s
+- Branch: %s
+- Year: %s
+
+Project Information:
+- Title: %s
+- Category: %s
+
+Project Description:
+%s
+
+Required Lab Resources:
+%s
+
+Resource Requirements Details:
+%s
+
+================================================
+
+Please review this submission and provide feedback.
+You can approve or reject this project through the admin dashboard.
+
+Best regards,
+JUIT Robotics Hub Automated System`,
+		req.StudentName,
+		req.StudentEmail,
+		req.RollNumber,
+		req.Branch,
+		req.Year,
+		req.ProjectName,
+		req.Category,
+		req.Description,
+		resourcesStr,
+		req.ResourceDescription,
+	)
+
+	return subject, body, nil
+}
+
 func getCommentsSection(comments string) string {
 	if comments != "" {
 		return fmt.Sprintf("Admin Comments:\n%s\n", comments)
@@ -125,7 +209,7 @@ func getCommentsSection(comments string) string {
 }
 
 func sendEmailHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")  // update later if needed 
+	w.Header().Set("Access-Control-Allow-Origin", "*")  // update later if needed
 	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
@@ -145,18 +229,44 @@ func sendEmailHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Email == "" || req.Name == "" || req.EmailType == "" {
-		http.Error(w, "Bad request: email, name, and emailType are required", http.StatusBadRequest)
+	// Validate based on email type
+	if req.EmailType == "faculty_notification" {
+		// Faculty notification requires different fields
+		if req.ProjectName == "" || req.StudentEmail == "" || req.StudentName == "" {
+			http.Error(w, "Bad request: projectName, studentEmail, and studentName are required for faculty notification", http.StatusBadRequest)
+			return
+		}
+	} else {
+		// Student emails require these fields
+		if req.Email == "" || req.Name == "" {
+			http.Error(w, "Bad request: email and name are required", http.StatusBadRequest)
+			return
+		}
+	}
+
+	if req.EmailType == "" {
+		http.Error(w, "Bad request: emailType is required", http.StatusBadRequest)
 		return
 	}
 
-	subject, body, err := generateEmailContent(req)
+	var subject, body string
+	var err error
+	var targetEmails []string
+
+	if req.EmailType == "faculty_notification" {
+		subject, body, err = generateFacultyEmailContent(req)
+		targetEmails = FACULTY_EMAILS
+	} else {
+		subject, body, err = generateStudentEmailContent(req)
+		targetEmails = []string{req.Email}
+	}
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	err = MailSENDER(subject, body, []string{req.Email})
+	err = MailSENDER(subject, body, targetEmails)
 	if err != nil {
 		http.Error(w, "Failed to send email", http.StatusInternalServerError)
 		return
@@ -165,7 +275,7 @@ func sendEmailHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
-		"message": fmt.Sprintf("%s email sent successfully", req.EmailType),
+		"message": fmt.Sprintf("%s email sent successfully to %d recipient(s)", req.EmailType, len(targetEmails)),
 	})
 }
 
@@ -197,6 +307,10 @@ func main() {
 	log.Printf("Endpoints:")
 	log.Printf("  POST /api/send-email")
 	log.Printf("  GET  /health")
+	log.Printf("Faculty notification emails (%d recipients):", len(FACULTY_EMAILS))
+	for i, email := range FACULTY_EMAILS {
+		log.Printf("  %d. %s", i+1, email)
+	}
 
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatalf("Failed to start server: %s", err)
