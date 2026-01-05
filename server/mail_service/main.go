@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/smtp"
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -28,8 +29,12 @@ type EmailRequest struct {
 	ResourceDescription string   `json:"resourceDescription,omitempty"`
 }
 
-// Hardcoded faculty email
-const FACULTY_EMAIL = "robotics-coordinator@juitsolan.in"
+// Faculty heads emails - EDIT HERE to add/remove faculty
+var FACULTY_EMAILS = []string{
+	"head1@juitsolan.in",      // Faculty Head 1
+	"head2@juitsolan.in",      // Faculty Head 2
+	"head3@juitsolan.in",      // Faculty Head 3
+}
 
 func MailSENDER(subject string, body string, to []string) error {
 	from := os.Getenv("EMAIL")
@@ -44,7 +49,7 @@ func MailSENDER(subject string, body string, to []string) error {
 
 	// Proper email formatting with headers
 	msg := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\n\r\n%s",
-		from, to[0], subject, body)
+		from, strings.Join(to, ", "), subject, body)
 
 	err := smtp.SendMail(
 		"smtp.gmail.com:587",
@@ -55,11 +60,11 @@ func MailSENDER(subject string, body string, to []string) error {
 	)
 
 	if err != nil {
-		log.Printf("Failed to send email to %s: %v", to[0], err)
+		log.Printf("Failed to send email: %v", err)
 		return err
 	}
 
-	log.Println("Email sent successfully to", to[0])
+	log.Printf("Email sent successfully to %d recipient(s)", len(to))
 	return nil
 }
 
@@ -246,14 +251,14 @@ func sendEmailHandler(w http.ResponseWriter, r *http.Request) {
 
 	var subject, body string
 	var err error
-	var targetEmail string
+	var targetEmails []string
 
 	if req.EmailType == "faculty_notification" {
 		subject, body, err = generateFacultyEmailContent(req)
-		targetEmail = FACULTY_EMAIL
+		targetEmails = FACULTY_EMAILS
 	} else {
 		subject, body, err = generateStudentEmailContent(req)
-		targetEmail = req.Email
+		targetEmails = []string{req.Email}
 	}
 
 	if err != nil {
@@ -261,7 +266,7 @@ func sendEmailHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = MailSENDER(subject, body, []string{targetEmail})
+	err = MailSENDER(subject, body, targetEmails)
 	if err != nil {
 		http.Error(w, "Failed to send email", http.StatusInternalServerError)
 		return
@@ -270,7 +275,7 @@ func sendEmailHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
-		"message": fmt.Sprintf("%s email sent successfully", req.EmailType),
+		"message": fmt.Sprintf("%s email sent successfully to %d recipient(s)", req.EmailType, len(targetEmails)),
 	})
 }
 
@@ -302,7 +307,10 @@ func main() {
 	log.Printf("Endpoints:")
 	log.Printf("  POST /api/send-email")
 	log.Printf("  GET  /health")
-	log.Printf("Faculty notification email: %s", FACULTY_EMAIL)
+	log.Printf("Faculty notification emails (%d recipients):", len(FACULTY_EMAILS))
+	for i, email := range FACULTY_EMAILS {
+		log.Printf("  %d. %s", i+1, email)
+	}
 
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatalf("Failed to start server: %s", err)
