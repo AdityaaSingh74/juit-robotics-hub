@@ -26,13 +26,16 @@ interface FormData {
   duration: string;
   resources: string[];
   otherResources?: string;
+  resourceDescription?: string;
   consent: boolean;
 }
 
 const ProjectForm = () => {
   const [showOtherResources, setShowOtherResources] = useState(false);
+  const [showResourceDescription, setShowResourceDescription] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedResources, setSelectedResources] = useState<string[]>([]);
+  const [resourceValidationError, setResourceValidationError] = useState(false);
   const { register, handleSubmit, watch, formState: { errors }, reset } = useForm<FormData>();
 
   const isTeamProject = watch('isTeamProject');
@@ -53,13 +56,23 @@ const ProjectForm = () => {
   const handleResourceChange = (resource: string, checked: boolean) => {
     if (checked) {
       setSelectedResources(prev => [...prev, resource]);
+      // Auto-open description box when any resource is selected
+      setShowResourceDescription(true);
+      setResourceValidationError(false);
+      
       if (resource === 'Other') {
         setShowOtherResources(true);
       }
     } else {
       setSelectedResources(prev => prev.filter(r => r !== resource));
+      
       if (resource === 'Other') {
         setShowOtherResources(false);
+      }
+      
+      // Keep description box open unless all resources are deselected
+      if (selectedResources.length === 1) {
+        setShowResourceDescription(false);
       }
     }
   };
@@ -67,14 +80,18 @@ const ProjectForm = () => {
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     
+    // Validate resources are selected
+    if (selectedResources.length === 0) {
+      setResourceValidationError(true);
+      toast.error('Please select at least one required lab resource');
+      setIsSubmitting(false);
+      return;
+    }
+
+    setResourceValidationError(false);
+    
     try {
       const resourcesArray = Array.isArray(selectedResources) ? selectedResources : [];
-      
-      if (resourcesArray.length === 0) {
-        toast.error('Please select at least one resource');
-        setIsSubmitting(false);
-        return;
-      }
 
       const projectData = {
         student_name: data.name,
@@ -92,6 +109,7 @@ const ProjectForm = () => {
         expected_outcomes: data.expectedOutcomes || null,
         duration: data.duration,
         required_resources: resourcesArray,
+        resource_description: data.resourceDescription || null,
         other_resources: data.otherResources || null,
         status: 'pending' as const,
       };
@@ -130,6 +148,7 @@ const ProjectForm = () => {
       reset();
       setSelectedResources([]);
       setShowOtherResources(false);
+      setShowResourceDescription(false);
     } catch (error) {
       toast.error('An unexpected error occurred. Please try again.');
     } finally {
@@ -389,8 +408,16 @@ const ProjectForm = () => {
               ))}
             </div>
 
-            {selectedResources.length === 0 && (
-              <p className="text-destructive text-sm">Please select at least one resource</p>
+            {resourceValidationError && (
+              <p className="text-destructive text-sm font-semibold">Please select at least one required lab resource</p>
+            )}
+
+            {selectedResources.length > 0 && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                <p className="text-sm text-blue-900 dark:text-blue-200">
+                  <strong>Selected Resources:</strong> {selectedResources.join(', ')}
+                </p>
+              </div>
             )}
 
             {showOtherResources && (
@@ -405,6 +432,29 @@ const ProjectForm = () => {
                   {...register('otherResources', { maxLength: 300 })}
                   placeholder="Describe other resources..."
                   rows={3}
+                  className="border-input focus:border-accent focus:ring-accent"
+                />
+              </motion.div>
+            )}
+
+            {showResourceDescription && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                transition={{ duration: 0.3 }}
+                className="space-y-2 bg-accent/5 border border-accent/20 rounded-lg p-4"
+              >
+                <Label htmlFor="resourceDescription" className="text-base font-semibold">
+                  Resource Requirements Details (max 500 characters)
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Provide more details about how you'll use these resources and any specific specifications or requirements
+                </p>
+                <Textarea
+                  id="resourceDescription"
+                  {...register('resourceDescription', { maxLength: 500 })}
+                  placeholder="Explain how you plan to use the selected resources, specific requirements, constraints, or any additional details..."
+                  rows={4}
                   className="border-input focus:border-accent focus:ring-accent"
                 />
               </motion.div>
