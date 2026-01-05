@@ -13,6 +13,16 @@ const Faculty = () => {
   // REPLACE: Professional faculty photos (400x400px, circular crop recommended)
   const faculty: FacultyMember[] = [
     {
+      // REPLACE: Faculty member 3 details
+      name: 'Dr. Vikas Baghel',
+      designation: 'Associate Professor',
+      specialization: '',
+      // REPLACE: LinkedIn profile URL
+      linkedin: 'https://www.juit.ac.in/faculty.php?id=374&dep=ece&page=0',
+      // REPLACE: Faculty member 3 photo
+      image: '/VikasSir.jpeg',
+    },
+    {
       // REPLACE: Faculty member 1 details
       name: 'Dr. Aman Sharma',
       designation: 'Assistant Professor (Senior Grade)',
@@ -31,16 +41,6 @@ const Faculty = () => {
       linkedin: 'https://www.linkedin.com/in/dr-shruti-jain-92705b130',
       // REPLACE: Faculty member 2 photo
       image: '/ShruitiMaam.jpeg',
-    },
-    {
-      // REPLACE: Faculty member 3 details
-      name: 'Dr. Vikas Baghel',
-      designation: 'Associate Professor',
-      specialization: '',
-      // REPLACE: LinkedIn profile URL
-      linkedin: 'https://www.juit.ac.in/faculty.php?id=374&dep=ece&page=0',
-      // REPLACE: Faculty member 3 photo
-      image: '/VikasSir.jpeg',
     },
   ];
 
