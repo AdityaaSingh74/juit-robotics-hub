@@ -16,7 +16,7 @@ const Faculty = () => {
       // REPLACE: Faculty member 1 details
       name: 'Dr. Aman Sharma',
       designation: 'Assistant Professor (Senior Grade)',
-      specialization: 'Autonomous Systems & Robotics',
+      specialization: '',
       // REPLACE: LinkedIn profile URL
       linkedin: 'https://www.linkedin.com/in/dr-aman-sharma-9186485b',
       // REPLACE: Faculty member 1 photo
@@ -26,7 +26,7 @@ const Faculty = () => {
       // REPLACE: Faculty member 2 details
       name: 'Dr. Shruti Jain',
       designation: 'Associate Dean (Inn) and Professor',
-      specialization: 'Computer Vision & Machine Learning',
+      specialization: '',
       // REPLACE: LinkedIn profile URL
       linkedin: 'https://www.linkedin.com/in/dr-shruti-jain-92705b130',
       // REPLACE: Faculty member 2 photo
@@ -36,7 +36,7 @@ const Faculty = () => {
       // REPLACE: Faculty member 3 details
       name: 'Dr. Vikas Baghel',
       designation: 'Associate Professor',
-      specialization: 'Robotic Manipulation & Control Systems',
+      specialization: '',
       // REPLACE: LinkedIn profile URL
       linkedin: 'https://www.juit.ac.in/faculty.php?id=374&dep=ece&page=0',
       // REPLACE: Faculty member 3 photo

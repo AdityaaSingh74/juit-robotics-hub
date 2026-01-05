@@ -168,7 +168,7 @@ const EquipmentShowcase = () => {
       imageAlt: "Dell Workstation",
     },
     {
-      title: "Gigabit WiFi Router",
+      title: "Arduino GIGA R1 WiFi with GIGA Display Shield",
       category: "Networking",
       description:
         "High-speed dual-band WiFi router with Gigabit Ethernet ports for reliable wireless connectivity. Low-latency communication essential for real-time robot control, teleoperation, sensor data streaming, and multi-robot coordination in lab environment.",

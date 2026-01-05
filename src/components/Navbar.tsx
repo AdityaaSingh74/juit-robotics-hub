@@ -33,24 +33,29 @@ const Navbar = () => {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? 'bg-primary/95 backdrop-blur-md shadow-lg' : 'bg-primary'
-      }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-primary/95 backdrop-blur-md shadow-lg' : 'bg-primary'
+        }`}
     >
       <div className="container-custom">
         <div className="flex items-center justify-between h-20">
-          {/* Logo - Text Only */}
+          {/* Logo with circular container */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-center space-x-2 cursor-pointer"
+            className="flex items-center space-x-3 cursor-pointer"
             onClick={() => scrollToSection('home')}
           >
+            <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center overflow-hidden border border-white/20">
+              <img
+                src='/LOGO.jpg'
+                alt="Drobotics Lab"
+                className="w-full h-full"
+              />
+            </div>
             <div className="text-primary-foreground text-xl font-bold">
               Drobotics Lab
             </div>
           </motion.div>
-
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-1">
             {navLinks.map((link, index) => (
