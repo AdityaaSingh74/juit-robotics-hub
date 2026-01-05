@@ -12,12 +12,24 @@ import (
 )
 
 type EmailRequest struct {
-	Email       string `json:"email"`
-	Name        string `json:"name"`
-	EmailType   string `json:"emailType"`   // "submission", "approved", "rejected"
-	ProjectName string `json:"projectName"` 
-	Comments    string `json:"comments"` 
+	Email              string `json:"email"`
+	Name               string `json:"name"`
+	EmailType          string `json:"emailType"`   // "submission", "approved", "rejected", "faculty_notification"
+	ProjectName        string `json:"projectName"`
+	Comments           string `json:"comments"`
+	StudentEmail       string `json:"studentEmail,omitempty"`
+	StudentName        string `json:"studentName,omitempty"`
+	RollNumber         string `json:"rollNumber,omitempty"`
+	Branch             string `json:"branch,omitempty"`
+	Year               string `json:"year,omitempty"`
+	Category           string `json:"category,omitempty"`
+	Description        string `json:"description,omitempty"`
+	ResourcesArray     []string `json:"resourcesArray,omitempty"`
+	ResourceDescription string `json:"resourceDescription,omitempty"`
 }
+
+// Hardcoded faculty email
+const FACULTY_EMAIL = "robotics-coordinator@juitsolan.in"
 
 func MailSENDER(subject string, body string, to []string) error {
 	from := os.Getenv("EMAIL")
@@ -43,16 +55,16 @@ func MailSENDER(subject string, body string, to []string) error {
 	)
 
 	if err != nil {
-		log.Printf("Failed to send email: %v", err)
+		log.Printf("Failed to send email to %s: %v", to[0], err)
 		return err
 	}
 
-	log.Println("Email sent successfully to", to)
+	log.Println("Email sent successfully to", to[0])
 	return nil
 }
 
-// I used AI to write the body , 
-func generateEmailContent(req EmailRequest) (string, string, error) {
+// generateStudentEmailContent creates email for students
+func generateStudentEmailContent(req EmailRequest) (string, string, error) {
 	var subject, body string
 
 	switch req.EmailType {
@@ -60,7 +72,7 @@ func generateEmailContent(req EmailRequest) (string, string, error) {
 		subject = "Project Submission Confirmation - JUIT Robotics Hub"
 		body = fmt.Sprintf(`Hi %s,
 
-Thank you for submitting your project idea to the JUIT Robotics Hub. 
+Thank you for submitting your project idea to the JUIT Robotics Hub.
 
 We have received your submission and our team will review it shortly. You will receive an update within 3-5 business days.
 
@@ -117,6 +129,71 @@ The JUIT Robotics Hub Team`, req.Name, req.ProjectName, getCommentsSection(req.C
 	return subject, body, nil
 }
 
+// generateFacultyEmailContent creates email for faculty when new project is submitted
+func generateFacultyEmailContent(req EmailRequest) (string, string, error) {
+	if req.EmailType != "faculty_notification" {
+		return "", "", fmt.Errorf("invalid email type for faculty: %s", req.EmailType)
+	}
+
+	subject = "New Project Submission for Review - JUIT Robotics Hub"
+
+	// Format resources as a list
+	resourcesStr := ""
+	if len(req.ResourcesArray) > 0 {
+		resourcesStr = "-"
+		for _, resource := range req.ResourcesArray {
+			resourcesStr += " " + resource + "\n  - "
+		}
+		resourcesStr = resourcesStr[:len(resourcesStr)-4] // Remove last dash and spaces
+	}
+
+	body := fmt.Sprintf(`New Project Submission - Faculty Review Required
+
+========== PROJECT SUBMISSION DETAILS ==========
+
+Student Information:
+- Name: %s
+- Email: %s
+- Roll Number: %s
+- Branch: %s
+- Year: %s
+
+Project Information:
+- Title: %s
+- Category: %s
+- Duration: Estimated
+
+Project Description:
+%s
+
+Required Lab Resources:
+%s
+
+Resource Requirements Details:
+%s
+
+================================================
+
+Please review this submission and provide feedback.
+You can approve or reject this project through the admin dashboard.
+
+Best regards,
+JUIT Robotics Hub Automated System`,
+		req.StudentName,
+		req.StudentEmail,
+		req.RollNumber,
+		req.Branch,
+		req.Year,
+		req.ProjectName,
+		req.Category,
+		req.Description,
+		resourcesStr,
+		req.ResourceDescription,
+	)
+
+	return subject, body, nil
+}
+
 func getCommentsSection(comments string) string {
 	if comments != "" {
 		return fmt.Sprintf("Admin Comments:\n%s\n", comments)
@@ -125,7 +202,7 @@ func getCommentsSection(comments string) string {
 }
 
 func sendEmailHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")  // update later if needed 
+	w.Header().Set("Access-Control-Allow-Origin", "*")  // update later if needed
 	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
@@ -145,18 +222,44 @@ func sendEmailHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Email == "" || req.Name == "" || req.EmailType == "" {
-		http.Error(w, "Bad request: email, name, and emailType are required", http.StatusBadRequest)
+	// Validate based on email type
+	if req.EmailType == "faculty_notification" {
+		// Faculty notification requires different fields
+		if req.ProjectName == "" || req.StudentEmail == "" || req.StudentName == "" {
+			http.Error(w, "Bad request: projectName, studentEmail, and studentName are required for faculty notification", http.StatusBadRequest)
+			return
+		}
+	} else {
+		// Student emails require these fields
+		if req.Email == "" || req.Name == "" {
+			http.Error(w, "Bad request: email and name are required", http.StatusBadRequest)
+			return
+		}
+	}
+
+	if req.EmailType == "" {
+		http.Error(w, "Bad request: emailType is required", http.StatusBadRequest)
 		return
 	}
 
-	subject, body, err := generateEmailContent(req)
+	var subject, body string
+	var err error
+	var targetEmail string
+
+	if req.EmailType == "faculty_notification" {
+		subject, body, err = generateFacultyEmailContent(req)
+		targetEmail = FACULTY_EMAIL
+	} else {
+		subject, body, err = generateStudentEmailContent(req)
+		targetEmail = req.Email
+	}
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	err = MailSENDER(subject, body, []string{req.Email})
+	err = MailSENDER(subject, body, []string{targetEmail})
 	if err != nil {
 		http.Error(w, "Failed to send email", http.StatusInternalServerError)
 		return
@@ -197,6 +300,7 @@ func main() {
 	log.Printf("Endpoints:")
 	log.Printf("  POST /api/send-email")
 	log.Printf("  GET  /health")
+	log.Printf("Faculty notification email: %s", FACULTY_EMAIL)
 
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatalf("Failed to start server: %s", err)
