@@ -180,12 +180,12 @@ const ProjectForm = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address *</Label>
+                <Label htmlFor="email">Email Address (roll.no@juitsolan.in) *</Label>
                 <Input
                   id="email"
                   type="email"
                   {...register('email', { required: 'Email is required', pattern: { value: /^\S+@juitsolan.in$/i, message: 'Invalid email' } })}
-                  placeholder="your.email@juitsolan.in"
+                  placeholder=""
                   className="border-input focus:border-accent focus:ring-accent"
                 />
                 {errors.email && <p className="text-destructive text-sm">{errors.email.message}</p>}
