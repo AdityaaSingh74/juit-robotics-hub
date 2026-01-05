@@ -91,7 +91,7 @@ const Admin = () => {
         <div className="bg-card rounded-2xl shadow-2xl p-8">
           {/* Logo */}
           <div className="text-center mb-8">
-            <div className="text-accent text-3xl font-bold mb-2">JUIT Robotics Lab</div>
+            <div className="text-accent text-3xl font-bold mb-2">JUIT Drobotics Lab</div>
             <h1 className="text-2xl font-bold text-primary">Admin Portal</h1>
           </div>
 
