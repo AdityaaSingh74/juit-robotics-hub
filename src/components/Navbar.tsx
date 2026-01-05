@@ -80,7 +80,7 @@ const Navbar = () => {
           </div>
           <div className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden">
               <img
-                src='src\assets\JUITWHITE.png'
+                src='src/assets/JUITWHITE.png'
                 className="w-full h-full"
               />
             </div>
