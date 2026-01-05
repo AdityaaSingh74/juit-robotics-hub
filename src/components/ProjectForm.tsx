@@ -39,6 +39,7 @@ const ProjectForm = () => {
   const { register, handleSubmit, watch, formState: { errors }, reset } = useForm<FormData>();
 
   const isTeamProject = watch('isTeamProject');
+  const duration = watch('duration');
 
   const resourceOptions = [
     'Drone',
@@ -77,6 +78,42 @@ const ProjectForm = () => {
     }
   };
 
+  const sendFacultyNotificationEmail = async (projectData: any) => {
+    try {
+      const facultyEmailPayload = {
+        emailType: 'faculty_notification',
+        projectName: projectData.project_title,
+        studentName: projectData.student_name,
+        studentEmail: projectData.student_email,
+        rollNumber: projectData.roll_number,
+        branch: projectData.branch,
+        year: projectData.year,
+        category: projectData.category,
+        description: projectData.description,
+        resourcesArray: projectData.required_resources,
+        resourceDescription: projectData.resource_description || 'Not specified',
+      };
+
+      const response = await fetch('http://localhost:3001/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(facultyEmailPayload),
+      });
+
+      if (!response.ok) {
+        console.error('Failed to send faculty notification email:', response.statusText);
+        // Don't throw error here as it's a non-critical notification
+      } else {
+        console.log('Faculty notification email sent successfully');
+      }
+    } catch (error) {
+      console.error('Error sending faculty notification email:', error);
+      // Non-critical error - don't fail the submission
+    }
+  };
+
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     
@@ -107,7 +144,7 @@ const ProjectForm = () => {
         project_title: data.projectTitle,
         description: data.description,
         expected_outcomes: data.expectedOutcomes || null,
-        duration: data.duration,
+        duration: duration || null,
         required_resources: resourcesArray,
         resource_description: data.resourceDescription || null,
         other_resources: data.otherResources || null,
@@ -127,6 +164,7 @@ const ProjectForm = () => {
 
       toast.success('Project idea submitted successfully! You\'ll receive a confirmation email shortly.');
 
+      // Send email to student
       try {
         await fetch('http://localhost:3001/api/send-email', {
           method: 'POST',
@@ -141,8 +179,11 @@ const ProjectForm = () => {
           }),
         });
       } catch (emailError) {
-        console.error('Failed to send confirmation email:', emailError);
+        console.error('Failed to send student confirmation email:', emailError);
       }
+
+      // Send email to faculty
+      await sendFacultyNotificationEmail(project);
       
       // Reset form and state
       reset();
