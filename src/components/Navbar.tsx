@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaBars, FaTimes } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
+import JUITLogo from '../assets/JUITWHITE.png';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -78,12 +79,14 @@ const Navbar = () => {
               Admin Login
             </Link>
           </div>
-          <div className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden">
-              <img
-                src='src/assets/JUITWHITE.png'
-                className="w-full h-full"
-              />
-            </div>
+          {/* JUIT Logo on the right */}
+          <div className="hidden md:flex w-12 h-12 rounded-full items-center justify-center overflow-hidden">
+            <img
+              src={JUITLogo}
+              alt="JUIT Logo"
+              className="w-full h-full object-contain"
+            />
+          </div>
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
