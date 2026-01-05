@@ -12,20 +12,20 @@ import (
 )
 
 type EmailRequest struct {
-	Email              string `json:"email"`
-	Name               string `json:"name"`
-	EmailType          string `json:"emailType"`   // "submission", "approved", "rejected", "faculty_notification"
-	ProjectName        string `json:"projectName"`
-	Comments           string `json:"comments"`
-	StudentEmail       string `json:"studentEmail,omitempty"`
-	StudentName        string `json:"studentName,omitempty"`
-	RollNumber         string `json:"rollNumber,omitempty"`
-	Branch             string `json:"branch,omitempty"`
-	Year               string `json:"year,omitempty"`
-	Category           string `json:"category,omitempty"`
-	Description        string `json:"description,omitempty"`
+	Email              string   `json:"email"`
+	Name               string   `json:"name"`
+	EmailType          string   `json:"emailType"`   // "submission", "approved", "rejected", "faculty_notification"
+	ProjectName        string   `json:"projectName"`
+	Comments           string   `json:"comments"`
+	StudentEmail       string   `json:"studentEmail,omitempty"`
+	StudentName        string   `json:"studentName,omitempty"`
+	RollNumber         string   `json:"rollNumber,omitempty"`
+	Branch             string   `json:"branch,omitempty"`
+	Year               string   `json:"year,omitempty"`
+	Category           string   `json:"category,omitempty"`
+	Description        string   `json:"description,omitempty"`
 	ResourcesArray     []string `json:"resourcesArray,omitempty"`
-	ResourceDescription string `json:"resourceDescription,omitempty"`
+	ResourceDescription string   `json:"resourceDescription,omitempty"`
 }
 
 // Hardcoded faculty email
@@ -135,16 +135,19 @@ func generateFacultyEmailContent(req EmailRequest) (string, string, error) {
 		return "", "", fmt.Errorf("invalid email type for faculty: %s", req.EmailType)
 	}
 
-	subject = "New Project Submission for Review - JUIT Robotics Hub"
+	subject := "New Project Submission for Review - JUIT Robotics Hub"
 
 	// Format resources as a list
 	resourcesStr := ""
 	if len(req.ResourcesArray) > 0 {
-		resourcesStr = "-"
-		for _, resource := range req.ResourcesArray {
-			resourcesStr += " " + resource + "\n  - "
+		for i, resource := range req.ResourcesArray {
+			if i > 0 {
+				resourcesStr += "\n  - "
+			} else {
+				resourcesStr = "- "
+			}
+			resourcesStr += resource
 		}
-		resourcesStr = resourcesStr[:len(resourcesStr)-4] // Remove last dash and spaces
 	}
 
 	body := fmt.Sprintf(`New Project Submission - Faculty Review Required
@@ -161,7 +164,6 @@ Student Information:
 Project Information:
 - Title: %s
 - Category: %s
-- Duration: Estimated
 
 Project Description:
 %s
