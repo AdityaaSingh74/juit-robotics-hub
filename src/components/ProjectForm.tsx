@@ -272,7 +272,6 @@ const ProjectForm = () => {
                   <option value="">Select branch</option>
                   <option value="CSE">Computer Science & Engineering</option>
                   <option value="ECE">Electronics & Communication</option>
-                  <option value="Mechanical">Mechanical Engineering</option>
                   <option value="IT">Information Technology</option>
                   <option value="Other">Other</option>
                 </select>
@@ -366,8 +365,6 @@ const ProjectForm = () => {
                   className="w-full px-3 py-2 border rounded-md border-input focus:border-accent focus:ring-accent"
                 >
                   <option value="">Select category</option>
-                  <option value="Autonomous Robots">Autonomous Robots</option>
-                  <option value="Robotic Manipulation">Robotic Manipulation</option>
                   <option value="Human-Robot Interaction">Human-Robot Interaction</option>
                   <option value="Industrial Automation">Industrial Automation</option>
                   <option value="Bio-Inspired Robotics">Bio-Inspired Robotics</option>

@@ -31,9 +31,9 @@ type EmailRequest struct {
 
 // Faculty heads emails - EDIT HERE to add/remove faculty
 var FACULTY_EMAILS = []string{
-	"head1@juitsolan.in",      // Faculty Head 1
-	"head2@juitsolan.in",      // Faculty Head 2
-	"head3@juitsolan.in",      // Faculty Head 3
+	"vikas.baghel@juitsolan.in",      // Faculty Head 2
+	"aman.sharma@juitsolan.in",      // Faculty Head 1
+	"shruti.jain@juitsolan.in",      // Faculty Head 3
 }
 
 func MailSENDER(subject string, body string, to []string) error {

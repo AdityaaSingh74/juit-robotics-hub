@@ -75,27 +75,18 @@ const Footer = () => {
               </p>
               <p>
                 <span className="text-primary-foreground/70">Phone:</span>{' '}
-                <span>+91-XXXXXXXXXX</span>
+                <span>+91-8858660843</span>
               </p>
             </div>
             <div className="flex space-x-4">
               <a
-                href="https://linkedin.com"
+                href="https://www.linkedin.com/company/robotics-lab-juit/about/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 bg-primary-foreground/10 hover:bg-accent flex items-center justify-center rounded-full transition-colors"
                 aria-label="LinkedIn"
               >
                 <FaLinkedin className="text-xl" />
-              </a>
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 bg-primary-foreground/10 hover:bg-accent flex items-center justify-center rounded-full transition-colors"
-                aria-label="Twitter"
-              >
-                <FaTwitter className="text-xl" />
               </a>
               <a
                 href="https://youtube.com"
