@@ -37,9 +37,30 @@ var FACULTY_EMAILS = []string{
 	"shruti.jain@juitsolan.in",      // Faculty Head 3
 }
 
+// Allowed origins for CORS
+var allowedOrigins = map[string]bool{
+	"http://localhost:5173":           true, // Local dev
+	"http://localhost:3000":           true, // Alternative local port
+	"http://127.0.0.1:5173":           true, // Localhost alternative
+	"https://juit-robotics-hub.vercel.app": true, // Production Vercel URL
+}
+
+func isOriginAllowed(origin string) bool {
+	// Allow localhost in development
+	if strings.Contains(origin, "localhost") || strings.Contains(origin, "127.0.0.1") {
+		return true
+	}
+	// Check against allowed production origins
+	return allowedOrigins[origin]
+}
+
 func MailSENDER(subject string, body string, to []string) error {
 	from := os.Getenv("EMAIL")
 	password := os.Getenv("PASSWORD")
+
+	if from == "" || password == "" {
+		return fmt.Errorf("EMAIL or PASSWORD environment variables not set")
+	}
 
 	auth := smtp.PlainAuth(
 		"",
@@ -210,9 +231,14 @@ func getCommentsSection(comments string) string {
 }
 
 func sendEmailHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")  // update later if needed
+	// CORS handling
+	origin := r.Header.Get("Origin")
+	if isOriginAllowed(origin) {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+	}
 	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Max-Age", "86400")
 
 	if r.Method == http.MethodOptions {
 		w.WriteHeader(http.StatusOK)
@@ -282,18 +308,19 @@ func sendEmailHandler(w http.ResponseWriter, r *http.Request) {
 
 func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }
 
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Println("Note: No .env file found, using environment variables")
 	}
 
 	// Validate environment variables
 	if os.Getenv("EMAIL") == "" || os.Getenv("PASSWORD") == "" {
-		log.Fatal("EMAIL and PASSWORD must be set in .env file")
+		log.Fatal("EMAIL and PASSWORD must be set in .env file or environment variables")
 	}
 
 	http.HandleFunc("/api/send-email", sendEmailHandler)
@@ -305,6 +332,12 @@ func main() {
 	}
 
 	log.Printf("Go email service starting on port %s...", port)
+	log.Printf("Environment:")
+	if os.Getenv("RAILWAY_ENVIRONMENT_NAME") != "" {
+		log.Printf("  Mode: Railway Production")
+	} else {
+		log.Printf("  Mode: Local Development")
+	}
 	log.Printf("Endpoints:")
 	log.Printf("  POST /api/send-email")
 	log.Printf("  GET  /health")
