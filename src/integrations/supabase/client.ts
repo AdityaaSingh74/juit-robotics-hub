@@ -16,6 +16,9 @@ if (USE_MOCK) {
   // Log only critical error to help with setup
   if (typeof window !== 'undefined') {
     console.error('Missing Supabase configuration. Please check your .env file.');
+    console.error('Required environment variables:');
+    console.error('  - VITE_SUPABASE_URL');
+    console.error('  - VITE_SUPABASE_ANON_KEY');
   }
   supabase = mockSupabase;
 } else {
@@ -26,11 +29,8 @@ if (USE_MOCK) {
         autoRefreshToken: true,
         detectSessionInUrl: true,
       },
-      global: {
-        headers: {
-          'apikey': supabaseAnonKey,
-        },
-      },
+      // Removed redundant apikey header - Supabase handles auth internally
+      // The apikey header was causing conflicts with Supabase's own auth mechanism
     });
   } catch (error) {
     console.error('Error initializing Supabase client:', error);
