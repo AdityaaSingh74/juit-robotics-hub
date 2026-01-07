@@ -1,7 +1,4 @@
 [build]
 builder = "dockerfile"
-dockerfilePath = "server/mail_service/Dockerfile"
-context = "server/mail_service"
-
-[deploy]
-startCommand = ""
+dockerfilePath = "Dockerfile"
+context = "./"
