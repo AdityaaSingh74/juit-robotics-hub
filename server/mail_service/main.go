@@ -38,27 +38,6 @@ var FACULTY_EMAILS = []string{
 	"shruti.jain@juitsolan.in",   */    // Faculty Head 3
 }
 
-// Allowed origins for CORS
-var allowedOrigins = map[string]bool{
-	"http://localhost:5173":                true, // Local dev
-	"http://localhost:3000":                true, // Alternative local port
-	"http://127.0.0.1:5173":                true, // Localhost alternative
-	"https://juit-robotics-hub.vercel.app": true, // Production Vercel URL
-}
-
-func isOriginAllowed(origin string) bool {
-	// Allow localhost in development
-	if strings.Contains(origin, "localhost") || strings.Contains(origin, "127.0.0.1") {
-		return true
-	}
-	// Allow any vercel.app domain
-	if strings.Contains(origin, "vercel.app") {
-		return true
-	}
-	// Check against allowed production origins
-	return allowedOrigins[origin]
-}
-
 func MailSENDER(subject string, body string, to []string) error {
 	from := os.Getenv("EMAIL")
 	password := os.Getenv("PASSWORD")
@@ -235,16 +214,17 @@ func getCommentsSection(comments string) string {
 	return ""
 }
 
-func sendEmailHandler(w http.ResponseWriter, r *http.Request) {
-	// CORS handling
-	origin := r.Header.Get("Origin")
-	if isOriginAllowed(origin) {
-		w.Header().Set("Access-Control-Allow-Origin", origin)
-		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-		w.Header().Set("Access-Control-Max-Age", "86400")
-	}
+func enableCORS(w http.ResponseWriter) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+	w.Header().Set("Access-Control-Max-Age", "3600")
+}
 
+func sendEmailHandler(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+
+	// Handle preflight requests
 	if r.Method == http.MethodOptions {
 		w.WriteHeader(http.StatusOK)
 		return
@@ -312,8 +292,9 @@ func sendEmailHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }
 
@@ -346,6 +327,7 @@ func main() {
 	log.Printf("Endpoints:")
 	log.Printf("  POST /api/send-email")
 	log.Printf("  GET  /health")
+	log.Printf("CORS: Allowing all origins (*)")
 	log.Printf("Faculty notification emails (%d recipients):", len(FACULTY_EMAILS))
 	for i, email := range FACULTY_EMAILS {
 		log.Printf("  %d. %s", i+1, email)
