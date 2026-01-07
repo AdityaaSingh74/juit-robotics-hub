@@ -57,38 +57,47 @@ export const useAuth = () => {
             role: 'admin' // Default to admin for first user
           };
           
-          const { data: newProfile, error: createError } = await supabase
-            .from('profiles')
-            .insert([defaultProfile])
-            .select()
-            .single();
-          
-          if (createError) {
-            // Use the default profile even if insert fails
+          try {
+            const { data: newProfile, error: createError } = await supabase
+              .from('profiles')
+              .insert([defaultProfile])
+              .select()
+              .single();
+            
+            if (!createError && newProfile) {
+              setProfile(newProfile);
+            } else {
+              // Use the default profile even if insert fails
+              setProfile(defaultProfile);
+            }
+          } catch (insertError) {
+            // Use the default profile if insert fails
             setProfile(defaultProfile);
-          } else {
-            setProfile(newProfile);
           }
         } else {
           // For other errors, create a temporary profile
-          setProfile({
+          const fallbackProfile: Profile = {
             id: userId,
             email: userEmail,
             full_name: userEmail.split('@')[0],
             role: 'admin'
-          });
+          };
+          setProfile(fallbackProfile);
+          console.warn('Profile fetch error:', error);
         }
-      } else {
+      } else if (data) {
         setProfile(data);
       }
     } catch (error) {
       // Create fallback profile
-      setProfile({
+      const fallbackProfile: Profile = {
         id: userId,
         email: userEmail,
         full_name: userEmail.split('@')[0],
         role: 'admin'
-      });
+      };
+      setProfile(fallbackProfile);
+      console.warn('Profile fetch exception:', error);
     } finally {
       setLoading(false);
     }
@@ -96,9 +105,18 @@ export const useAuth = () => {
 
   const signIn = async (email: string, password: string): Promise<{ error: AuthError | null }> => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      setLoading(true);
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      
+      if (!error && data?.user) {
+        // Profile fetch will happen via onAuthStateChange listener
+        return { error: null };
+      }
+      
+      setLoading(false);
       return { error };
     } catch (error) {
+      setLoading(false);
       return { error: error as AuthError };
     }
   };
@@ -106,8 +124,10 @@ export const useAuth = () => {
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
+      setProfile(null);
     } catch (error) {
       // Silently handle sign-out errors
+      console.warn('Sign-out error:', error);
     }
   };
 
