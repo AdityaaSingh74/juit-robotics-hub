@@ -14,6 +14,7 @@ export const ProjectSubmissionForm = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +40,7 @@ export const ProjectSubmissionForm = () => {
       if (error) throw error;
 
       // 2. Send confirmation email
-      await fetch('http://localhost:3001/api/send-email', {
+      await fetch(`${backendUrl}/api/send-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
