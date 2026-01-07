@@ -1,10 +1,7 @@
-[services]
-  [services.frontend]
-    root = "."
-    buildCommand = "npm install && npm run build"
-    startCommand = "npm run preview"
+[build]
+builder = "dockerfile"
+dockerfilePath = "server/mail_service/Dockerfile"
+context = "server/mail_service"
 
-  [services.mail-service]
-    root = "server/mail_service"
-    buildCommand = "go mod download"
-    startCommand = "go run main.go"
+[deploy]
+startCommand = ""
