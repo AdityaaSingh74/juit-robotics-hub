@@ -40,6 +40,7 @@ const ProjectForm = () => {
 
   const isTeamProject = watch('isTeamProject');
   const duration = watch('duration');
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
 
   const resourceOptions = [
     'Drone',
@@ -94,7 +95,7 @@ const ProjectForm = () => {
         resourceDescription: projectData.resource_description || 'Not specified',
       };
 
-      const response = await fetch('http://localhost:3001/api/send-email', {
+      const response = await fetch(`${backendUrl}/api/send-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -166,7 +167,7 @@ const ProjectForm = () => {
 
       // Send email to student
       try {
-        await fetch('http://localhost:3001/api/send-email', {
+        await fetch(`${backendUrl}/api/send-email`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
