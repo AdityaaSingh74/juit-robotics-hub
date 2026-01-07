@@ -1,0 +1,10 @@
+[services]
+  [services.frontend]
+    root = "."
+    buildCommand = "npm install && npm run build"
+    startCommand = "npm run preview"
+
+  [services.mail-service]
+    root = "server/mail_service"
+    buildCommand = "go mod download"
+    startCommand = "go run main.go"
