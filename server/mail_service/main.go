@@ -40,15 +40,19 @@ var FACULTY_EMAILS = []string{
 
 // Allowed origins for CORS
 var allowedOrigins = map[string]bool{
-	"http://localhost:5173":           true, // Local dev
-	"http://localhost:3000":           true, // Alternative local port
-	"http://127.0.0.1:5173":           true, // Localhost alternative
+	"http://localhost:5173":                true, // Local dev
+	"http://localhost:3000":                true, // Alternative local port
+	"http://127.0.0.1:5173":                true, // Localhost alternative
 	"https://juit-robotics-hub.vercel.app": true, // Production Vercel URL
 }
 
 func isOriginAllowed(origin string) bool {
 	// Allow localhost in development
 	if strings.Contains(origin, "localhost") || strings.Contains(origin, "127.0.0.1") {
+		return true
+	}
+	// Allow any vercel.app domain
+	if strings.Contains(origin, "vercel.app") {
 		return true
 	}
 	// Check against allowed production origins
@@ -236,10 +240,10 @@ func sendEmailHandler(w http.ResponseWriter, r *http.Request) {
 	origin := r.Header.Get("Origin")
 	if isOriginAllowed(origin) {
 		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.Header().Set("Access-Control-Max-Age", "86400")
 	}
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	w.Header().Set("Access-Control-Max-Age", "86400")
 
 	if r.Method == http.MethodOptions {
 		w.WriteHeader(http.StatusOK)
