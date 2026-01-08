@@ -244,6 +244,62 @@ func sendEmailAsync(subject string, body string, to []string, emailType string) 
 	}()
 }
 
+// testEmailHandler - for debugging email credentials
+func testEmailHandler(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	log.Printf("[TEST_EMAIL] Testing email credentials...")
+
+	from := os.Getenv("EMAIL")
+	password := os.Getenv("PASSWORD")
+
+	if from == "" {
+		response := map[string]string{"error": "EMAIL environment variable not set"}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	if password == "" {
+		response := map[string]string{"error": "PASSWORD environment variable not set"}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// Try to connect to SMTP
+	log.Printf("[TEST_EMAIL] Attempting SMTP connection...")
+	err := MailSENDER(
+		"[TEST] JUIT Robotics Hub - Email Credentials Test",
+		"If you received this email, your credentials are working correctly!",
+		[]string{from},
+	)
+
+	if err != nil {
+		log.Printf("[TEST_EMAIL] Test failed: %v", err)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Test email sent successfully to " + from})
+}
+
 func sendEmailHandler(w http.ResponseWriter, r *http.Request) {
 	enableCORS(w)
 
@@ -358,6 +414,7 @@ func main() {
 	log.Printf("[STARTUP] PASSWORD configured: ***hidden***")
 
 	http.HandleFunc("/api/send-email", sendEmailHandler)
+	http.HandleFunc("/api/test-email", testEmailHandler)
 	http.HandleFunc("/health", healthCheckHandler)
 
 	port := os.Getenv("PORT")
@@ -375,7 +432,8 @@ func main() {
 		log.Printf("  Mode: Local Development")
 	}
 	log.Printf("Endpoints:")
-	log.Printf("  POST /api/send-email")
+	log.Printf("  POST /api/send-email (main)")
+	log.Printf("  POST /api/test-email (debug)")
 	log.Printf("  GET  /health")
 	log.Printf("CORS: Allowing all origins (*)")
 	log.Printf("Email Sending: Asynchronous (non-blocking)")
