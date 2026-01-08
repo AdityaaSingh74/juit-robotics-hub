@@ -253,8 +253,9 @@ func testEmailHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Method != http.MethodPost {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+	if r.Method != http.MethodPost && r.Method != http.MethodGet {
+		log.Printf("[ERROR] Invalid method for test: %s", r.Method)
+		http.Error(w, "Invalid request method. Use GET or POST", http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -263,24 +264,29 @@ func testEmailHandler(w http.ResponseWriter, r *http.Request) {
 	from := os.Getenv("EMAIL")
 	password := os.Getenv("PASSWORD")
 
+	w.Header().Set("Content-Type", "application/json")
+
 	if from == "" {
-		response := map[string]string{"error": "EMAIL environment variable not set"}
-		w.Header().Set("Content-Type", "application/json")
+		response := map[string]string{"error": "EMAIL environment variable not set", "status": "FAIL"}
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(response)
+		log.Printf("[TEST_EMAIL_ERROR] EMAIL not set")
 		return
 	}
 
 	if password == "" {
-		response := map[string]string{"error": "PASSWORD environment variable not set"}
-		w.Header().Set("Content-Type", "application/json")
+		response := map[string]string{"error": "PASSWORD environment variable not set", "status": "FAIL"}
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(response)
+		log.Printf("[TEST_EMAIL_ERROR] PASSWORD not set")
 		return
 	}
 
+	log.Printf("[TEST_EMAIL] EMAIL found: %s", from)
+	log.Printf("[TEST_EMAIL] PASSWORD found: (length: %d)", len(password))
+
 	// Try to connect to SMTP
-	log.Printf("[TEST_EMAIL] Attempting SMTP connection...")
+	log.Printf("[TEST_EMAIL] Attempting SMTP connection to gmail...")
 	err := MailSENDER(
 		"[TEST] JUIT Robotics Hub - Email Credentials Test",
 		"If you received this email, your credentials are working correctly!",
@@ -288,16 +294,23 @@ func testEmailHandler(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err != nil {
-		log.Printf("[TEST_EMAIL] Test failed: %v", err)
-		w.Header().Set("Content-Type", "application/json")
+		log.Printf("[TEST_EMAIL_FAILED] Test failed: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		json.NewEncoder(w).Encode(map[string]string{
+			"error":  err.Error(),
+			"status": "FAIL",
+			"email":  from,
+		})
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	log.Printf("[TEST_EMAIL_SUCCESS] Test passed! Email sent to %s", from)
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Test email sent successfully to " + from})
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Test email sent successfully to " + from,
+		"status":  "SUCCESS",
+		"email":   from,
+	})
 }
 
 func sendEmailHandler(w http.ResponseWriter, r *http.Request) {
@@ -433,7 +446,8 @@ func main() {
 	}
 	log.Printf("Endpoints:")
 	log.Printf("  POST /api/send-email (main)")
-	log.Printf("  POST /api/test-email (debug)")
+	log.Printf("  GET  /api/test-email (debug - test credentials)")
+	log.Printf("  POST /api/test-email (debug - test credentials)")
 	log.Printf("  GET  /health")
 	log.Printf("CORS: Allowing all origins (*)")
 	log.Printf("Email Sending: Asynchronous (non-blocking)")
