@@ -42,10 +42,18 @@ func MailSENDER(subject string, body string, to []string) error {
 	from := os.Getenv("EMAIL")
 	password := os.Getenv("PASSWORD")
 
+	log.Printf("[EMAIL_DEBUG] Starting email send...")
+	log.Printf("[EMAIL_DEBUG] FROM: %s", from)
+	log.Printf("[EMAIL_DEBUG] PASSWORD set: %v", password != "")
+	log.Printf("[EMAIL_DEBUG] TO: %v", to)
+
 	if from == "" || password == "" {
-		return fmt.Errorf("EMAIL or PASSWORD environment variables not set")
+		error_msg := "EMAIL or PASSWORD environment variables not set"
+		log.Printf("[EMAIL_ERROR] %s", error_msg)
+		return fmt.Errorf(error_msg)
 	}
 
+	log.Printf("[EMAIL_DEBUG] Creating SMTP auth...")
 	auth := smtp.PlainAuth(
 		"",
 		from,
@@ -57,6 +65,7 @@ func MailSENDER(subject string, body string, to []string) error {
 	msg := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\n\r\n%s",
 		from, strings.Join(to, ", "), subject, body)
 
+	log.Printf("[EMAIL_DEBUG] Connecting to smtp.gmail.com:587...")
 	err := smtp.SendMail(
 		"smtp.gmail.com:587",
 		auth,
@@ -66,11 +75,12 @@ func MailSENDER(subject string, body string, to []string) error {
 	)
 
 	if err != nil {
-		log.Printf("Failed to send email: %v", err)
+		log.Printf("[EMAIL_ERROR] SMTP SendMail failed: %v", err)
+		log.Printf("[EMAIL_ERROR] Error type: %T", err)
 		return err
 	}
 
-	log.Printf("Email sent successfully to %d recipient(s)", len(to))
+	log.Printf("[EMAIL_SUCCESS] Email sent successfully to %d recipient(s): %v", len(to), to)
 	return nil
 }
 
@@ -222,11 +232,14 @@ func enableCORS(w http.ResponseWriter) {
 }
 
 // sendEmailAsync sends email in background goroutine
-func sendEmailAsync(subject string, body string, to []string) {
+func sendEmailAsync(subject string, body string, to []string, emailType string) {
 	go func() {
+		log.Printf("[ASYNC_TASK] Background goroutine started for %s", emailType)
 		err := MailSENDER(subject, body, to)
 		if err != nil {
-			log.Printf("Background email send failed: %v", err)
+			log.Printf("[ASYNC_ERROR] Background email send failed for %s: %v", emailType, err)
+		} else {
+			log.Printf("[ASYNC_SUCCESS] Background email sent successfully for %s", emailType)
 		}
 	}()
 }
@@ -234,39 +247,49 @@ func sendEmailAsync(subject string, body string, to []string) {
 func sendEmailHandler(w http.ResponseWriter, r *http.Request) {
 	enableCORS(w)
 
+	log.Printf("[REQUEST] Received %s request", r.Method)
+
 	// Handle preflight requests
 	if r.Method == http.MethodOptions {
+		log.Printf("[REQUEST] Preflight OPTIONS request")
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
 	if r.Method != http.MethodPost {
+		log.Printf("[ERROR] Invalid method: %s", r.Method)
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
 	}
 
 	var req EmailRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("[ERROR] Failed to decode JSON: %v", err)
 		http.Error(w, "Bad request: "+err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	log.Printf("[REQUEST] Decoded request - EmailType: %s", req.EmailType)
 
 	// Validate based on email type
 	if req.EmailType == "faculty_notification" {
 		// Faculty notification requires different fields
 		if req.ProjectName == "" || req.StudentEmail == "" || req.StudentName == "" {
+			log.Printf("[VALIDATION] Missing required fields for faculty notification")
 			http.Error(w, "Bad request: projectName, studentEmail, and studentName are required for faculty notification", http.StatusBadRequest)
 			return
 		}
 	} else {
 		// Student emails require these fields
 		if req.Email == "" || req.Name == "" {
+			log.Printf("[VALIDATION] Missing required fields for student email")
 			http.Error(w, "Bad request: email and name are required", http.StatusBadRequest)
 			return
 		}
 	}
 
 	if req.EmailType == "" {
+		log.Printf("[VALIDATION] EmailType not specified")
 		http.Error(w, "Bad request: emailType is required", http.StatusBadRequest)
 		return
 	}
@@ -276,27 +299,35 @@ func sendEmailHandler(w http.ResponseWriter, r *http.Request) {
 	var targetEmails []string
 
 	if req.EmailType == "faculty_notification" {
+		log.Printf("[PROCESS] Generating faculty notification email")
 		subject, body, err = generateFacultyEmailContent(req)
 		targetEmails = FACULTY_EMAILS
 	} else {
+		log.Printf("[PROCESS] Generating student email")
 		subject, body, err = generateStudentEmailContent(req)
 		targetEmails = []string{req.Email}
 	}
 
 	if err != nil {
+		log.Printf("[ERROR] Failed to generate email content: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
+	log.Printf("[PROCESS] Email content generated for %d recipient(s)", len(targetEmails))
+
 	// Send email asynchronously - don't block the response
-	sendEmailAsync(subject, body, targetEmails)
+	log.Printf("[PROCESS] Queuing async email task")
+	sendEmailAsync(subject, body, targetEmails, req.EmailType)
 
 	// Return success immediately
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
+	response := map[string]string{
 		"message": fmt.Sprintf("%s email queued successfully for %d recipient(s)", req.EmailType, len(targetEmails)),
-	})
+	}
+	json.NewEncoder(w).Encode(response)
+	log.Printf("[RESPONSE] Sent success response to client")
 }
 
 func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
@@ -313,9 +344,18 @@ func main() {
 	}
 
 	// Validate environment variables
-	if os.Getenv("EMAIL") == "" || os.Getenv("PASSWORD") == "" {
-		log.Fatal("EMAIL and PASSWORD must be set in .env file or environment variables")
+	emailAddr := os.Getenv("EMAIL")
+	password := os.Getenv("PASSWORD")
+
+	if emailAddr == "" {
+		log.Fatal("[FATAL] EMAIL environment variable not set")
 	}
+	if password == "" {
+		log.Fatal("[FATAL] PASSWORD environment variable not set")
+	}
+
+	log.Printf("[STARTUP] EMAIL configured: %s", emailAddr)
+	log.Printf("[STARTUP] PASSWORD configured: ***hidden***")
 
 	http.HandleFunc("/api/send-email", sendEmailHandler)
 	http.HandleFunc("/health", healthCheckHandler)
@@ -325,7 +365,9 @@ func main() {
 		port = "3001"
 	}
 
-	log.Printf("Go email service starting on port %s...", port)
+	log.Printf("======================================")
+	log.Printf("Go email service starting on port %s", port)
+	log.Printf("======================================")
 	log.Printf("Environment:")
 	if os.Getenv("RAILWAY_ENVIRONMENT_NAME") != "" {
 		log.Printf("  Mode: Railway Production")
@@ -341,6 +383,7 @@ func main() {
 	for i, email := range FACULTY_EMAILS {
 		log.Printf("  %d. %s", i+1, email)
 	}
+	log.Printf("======================================")
 
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatalf("Failed to start server: %s", err)
