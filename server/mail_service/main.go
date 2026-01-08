@@ -221,6 +221,16 @@ func enableCORS(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Max-Age", "3600")
 }
 
+// sendEmailAsync sends email in background goroutine
+func sendEmailAsync(subject string, body string, to []string) {
+	go func() {
+		err := MailSENDER(subject, body, to)
+		if err != nil {
+			log.Printf("Background email send failed: %v", err)
+		}
+	}()
+}
+
 func sendEmailHandler(w http.ResponseWriter, r *http.Request) {
 	enableCORS(w)
 
@@ -278,16 +288,14 @@ func sendEmailHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = MailSENDER(subject, body, targetEmails)
-	if err != nil {
-		http.Error(w, "Failed to send email", http.StatusInternalServerError)
-		return
-	}
+	// Send email asynchronously - don't block the response
+	sendEmailAsync(subject, body, targetEmails)
 
+	// Return success immediately
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
-		"message": fmt.Sprintf("%s email sent successfully to %d recipient(s)", req.EmailType, len(targetEmails)),
+		"message": fmt.Sprintf("%s email queued successfully for %d recipient(s)", req.EmailType, len(targetEmails)),
 	})
 }
 
@@ -328,6 +336,7 @@ func main() {
 	log.Printf("  POST /api/send-email")
 	log.Printf("  GET  /health")
 	log.Printf("CORS: Allowing all origins (*)")
+	log.Printf("Email Sending: Asynchronous (non-blocking)")
 	log.Printf("Faculty notification emails (%d recipients):", len(FACULTY_EMAILS))
 	for i, email := range FACULTY_EMAILS {
 		log.Printf("  %d. %s", i+1, email)
