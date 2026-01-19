@@ -432,8 +432,9 @@ func main() {
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "3001"
+		log.Fatal("PORT environment variable not set")
 	}
+
 
 	log.Printf("======================================")
 	log.Printf("Go email service starting on port %s", port)
@@ -457,7 +458,11 @@ func main() {
 	}
 	log.Printf("======================================")
 
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
+	addr := "0.0.0.0:" + port
+	log.Printf("[STARTUP] Binding server to %s", addr)
+
+	if err := http.ListenAndServe(addr, nil); err != nil {
 		log.Fatalf("Failed to start server: %s", err)
 	}
+
 }
