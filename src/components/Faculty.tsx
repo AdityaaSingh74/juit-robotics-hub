@@ -35,7 +35,7 @@ const Faculty = () => {
     {
       // REPLACE: Faculty member 2 details
       name: 'Dr. Shruti Jain',
-      designation: 'Associate Dean (Inn) and Professor',
+      designation: 'Dean of Academic',
       specialization: '',
       // REPLACE: LinkedIn profile URL
       linkedin: 'https://www.linkedin.com/in/dr-shruti-jain-92705b130',
